@@ -1,0 +1,16 @@
+.next
+.open-next
+.wrangler
+node_modules
+package-lock.json
+drizzle/migrations
+cloudflare-env.d.ts
+
+# Source-of-truth documents: keep author formatting.
+FORMFLARE_PLAN.md
+AGENTS.md
+CLAUDE.md
+
+# Wrangler parses this strictly; Prettier adds trailing commas.
+wrangler.jsonc
+wrangler.dev.jsonc

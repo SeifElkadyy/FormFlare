@@ -1,0 +1,24 @@
+# Formflare needs no secrets to deploy.
+#
+# Every UNCOMMENTED line in this file becomes a required secret prompt in the
+# "Deploy to Cloudflare" flow, and the example value ships to production.
+# Keep everything commented out.
+#
+# Session keys are generated during /setup and stored in D1.
+# Turnstile keys are configured per form in the dashboard.
+#
+# ---------------------------------------------------------------------------
+# Optional hardening
+# ---------------------------------------------------------------------------
+# SETUP_TOKEN — when set, /setup additionally requires this token, closing the
+# window between deploy and first setup in which someone who finds the URL could
+# claim the instance. Leave it unset for the normal one-click flow (the first-run
+# lock still applies). To use it, add it as a secret after deploying and open
+# /setup?token=YOUR_TOKEN
+#
+# SETUP_TOKEN=change-me
+#
+# ---------------------------------------------------------------------------
+# Local development only — never set in production
+# ---------------------------------------------------------------------------
+# FORMFLARE_DEV_SEED=1

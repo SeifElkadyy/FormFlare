@@ -1,0 +1,68 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "formflare",
+  "main": "./worker.ts",
+  "compatibility_date": "2026-09-16",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "keep_vars": true,
+
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
+  },
+
+  "observability": { "enabled": true },
+  "upload_source_maps": true,
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "formflare",
+      "migrations_dir": "drizzle/migrations"
+    }
+  ],
+
+  "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "formflare-uploads" }],
+
+  "queues": {
+    "producers": [{ "binding": "JOBS", "queue": "formflare-jobs" }],
+    "consumers": [
+      {
+        "queue": "formflare-jobs",
+        "max_batch_size": 10,
+        "max_retries": 5
+      }
+    ]
+  },
+
+  // Optional at runtime: the app degrades gracefully when Email Sending is unavailable.
+  // No "remote" field — not part of the documented send_email schema (see docs/DECISIONS.md).
+  "send_email": [{ "name": "EMAIL" }],
+
+  // namespace_id must be a string containing a positive integer.
+  "ratelimits": [
+    {
+      "name": "SUBMIT_RATE_LIMIT",
+      "namespace_id": "2001",
+      "simple": { "limit": 10, "period": 60 }
+    },
+    {
+      "name": "API_RATE_LIMIT",
+      "namespace_id": "2003",
+      "simple": { "limit": 120, "period": 60 }
+    },
+    {
+      "name": "LOGIN_RATE_LIMIT",
+      "namespace_id": "2002",
+      "simple": { "limit": 10, "period": 60 }
+    }
+  ],
+
+  "vars": {
+    "APP_NAME": "Formflare"
+  },
+
+  // Every 15 minutes: re-enqueue work stranded by an evicted Worker or a lost message.
+  // Daily at 03:00: expired sessions, old delivery logs, orphaned R2 objects.
+  "triggers": { "crons": ["*/15 * * * *", "0 3 * * *"] }
+}

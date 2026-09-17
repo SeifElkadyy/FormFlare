@@ -1,0 +1,96 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // ---------------------------------------------------------------------------
+  // Throwaway instance for verifying behaviour on real Cloudflare infrastructure
+  // (production workerd, D1's Durable Object, the PBKDF2 cap) that Miniflare
+  // cannot confirm.
+  //
+  // Kept OUT of wrangler.jsonc on purpose. That file is cloned verbatim by every
+  // "Deploy to Cloudflare" user, so it must contain no account-specific IDs and
+  // no dev-only names — a stray database_id there would point a stranger's
+  // install at this account's database.
+  //
+  // Copy this file to `wrangler.dev.jsonc` (which is gitignored) and fill in your own
+  // database id. That file stays out of the repository because it holds an id specific
+  // to one Cloudflare account.
+  //
+  // Used explicitly:
+  //   npm run deploy:dev
+  //   npm run db:migrate:dev
+  //   npx wrangler -c wrangler.dev.jsonc <command>
+  //
+  // `npm run cf-typegen` deliberately does NOT read this file: types come from
+  // the production config only, so the committed cloudflare-env.d.ts matches
+  // what a deploy-button user gets.
+  //
+  // The only behavioural difference from production is SUBMIT_RATE_LIMIT — the
+  // same binding name (so no code changes), a different namespace, and a high
+  // ceiling so a burst of concurrent signups is not throttled while testing the
+  // waitlist counter. LOGIN_RATE_LIMIT stays at the production value.
+  // ---------------------------------------------------------------------------
+
+  "name": "formflare-dev",
+  "main": "./worker.ts",
+  "compatibility_date": "2026-09-16",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
+  },
+
+  "observability": { "enabled": true },
+
+  // Off by default: this instance holds throwaway test data but is otherwise a real,
+  // publicly reachable Formflare. Flip to true only while actively verifying something.
+  "workers_dev": false,
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "formflare-dev",
+      "database_id": "PASTE_YOUR_D1_DATABASE_ID_HERE",
+      "migrations_dir": "drizzle/migrations"
+    }
+  ],
+
+  "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "formflare-dev-uploads" }],
+
+  "queues": {
+    "producers": [{ "binding": "JOBS", "queue": "formflare-dev-jobs" }],
+    "consumers": [
+      {
+        "queue": "formflare-dev-jobs",
+        "max_batch_size": 10,
+        "max_retries": 5
+      }
+    ]
+  },
+
+  "send_email": [{ "name": "EMAIL" }],
+
+  "ratelimits": [
+    {
+      "name": "SUBMIT_RATE_LIMIT",
+      "namespace_id": "3001",
+      "simple": { "limit": 1000, "period": 60 }
+    },
+    {
+      "name": "API_RATE_LIMIT",
+      "namespace_id": "3003",
+      "simple": { "limit": 120, "period": 60 }
+    },
+    {
+      "name": "LOGIN_RATE_LIMIT",
+      "namespace_id": "3002",
+      "simple": { "limit": 10, "period": 60 }
+    }
+  ],
+
+  "vars": {
+    "APP_NAME": "Formflare (dev)"
+  },
+
+  "triggers": { "crons": ["*/15 * * * *", "0 3 * * *"] }
+}

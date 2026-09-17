@@ -1,0 +1,66 @@
+{
+  "name": "formflare",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "deploy": "opennextjs-cloudflare build && npm run db:migrate:remote && wrangler deploy",
+    "upload": "opennextjs-cloudflare build && wrangler versions upload",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tests",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "reset-password": "node scripts/reset-password.mjs",
+    "deploy:dev": "opennextjs-cloudflare build && npm run db:migrate:dev && wrangler deploy -c wrangler.dev.jsonc",
+    "db:migrate:dev": "wrangler d1 migrations apply DB --remote -c wrangler.dev.jsonc",
+    "preview:dev": "opennextjs-cloudflare build && wrangler dev -c wrangler.dev.jsonc",
+    "check:size": "node scripts/check-bundle-size.mjs"
+  },
+  "cloudflare": {
+    "bindings": {
+      "DB": {
+        "description": "D1 database for forms, submissions, and users. Leave as **new** to create it automatically."
+      },
+      "BUCKET": {
+        "description": "R2 bucket for uploaded files. Leave as **new**."
+      },
+      "JOBS": {
+        "description": "Queue for sending emails and webhooks in the background. Leave as **new**."
+      },
+      "EMAIL": {
+        "description": "Cloudflare Email Sending. Optional: owner alerts and auto-replies need Email Sending enabled, and sending to arbitrary recipients needs the **Workers Paid** plan. The app works without it."
+      }
+    }
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.1.11",
+    "@opennextjs/cloudflare": "^1.20.6",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.6",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.5",
+    "prettier": "^3.6.2",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.133.0"
+  },
+  "license": "MIT",
+  "author": "C01 Developments"
+}

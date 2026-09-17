@@ -1,0 +1,27 @@
+# gitleaks configuration.
+#
+# Extends the default ruleset; only adds allowlists for known false positives, so a real
+# secret is still caught.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(?:key|api|token|secret|client|passwd|password|auth|access)(?:[0-9a-z\-_\t .]{0,20})(?:[\s|']|[\s|"]){0,3}(?:=|>|:{1,3}=|\|\||:|<=|=>|:=|\?=)(?:'|\"|\s|=|\x60){0,5}([0-9a-z\-_.=]{10,150})(?:['|\"|\n|\r|\s|\x60|;|\\]|$)'''
+keywords = ["key", "api", "token", "secret", "client", "passwd", "password", "auth", "access"]
+
+[rules.allowlist]
+# Prose and code comments that merely contain the word "password" — e.g.
+# "Password hashing: PBKDF2-SHA-256 via WebCrypto" — are documentation, not secrets.
+# Matched loosely on "password...PBKDF2" so the rule still fires on a real assignment.
+# The "secret" gitleaks extracts here is the literal algorithm name.
+stopwords = ["pbkdf2"]
+regexes = [
+  '''(?i)PBKDF2[-_]?SHA[-_]?256''',
+]
+paths = [
+  # The build plan is prose about the design, including how passwords are hashed.
+  '''FORMFLARE_PLAN\.md''',
+  '''docs/DECISIONS\.md''',
+]

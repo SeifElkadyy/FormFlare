@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history, so the secret scan sees every commit rather than just the tip.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # legacy-peer-deps comes from the committed .npmrc, so local, CI and
+      # Workers Builds all install identically. See docs/DECISIONS.md.
+      - name: Install
+        run: npm ci
+
+      # cloudflare-env.d.ts is committed, because Cloudflare's build runs
+      # `next build` (which type-checks) and never runs cf-typegen.
+      # Regenerate and fail if the committed copy is stale.
+      - name: Check binding types are up to date
+        run: |
+          npm run cf-typegen
+          git diff --exit-code -- cloudflare-env.d.ts
+
+      # Fails the build on a committed secret. The config allowlists only documented
+      # false positives (the word "password" in prose); verified it still detects a
+      # real key.
+      #
+      # Run directly rather than via gitleaks-action, which scans `<base>^..<head>`.
+      # The repository starts from an orphan commit with no parent, so `^` does not
+      # resolve and the action fails with "ambiguous argument" on every push.
+      # Scanning the whole history avoids the parent reference entirely and is fast
+      # at this size.
+      - name: Scan for secrets
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            | tar -xz -C /tmp gitleaks
+          /tmp/gitleaks detect --source . --config .gitleaks.toml --redact --verbose
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Must run before the tests. vitest loads worker.ts as the Worker entry point,
+      # and worker.ts imports ./.open-next/worker.js — a build artefact that is
+      # gitignored, so a fresh checkout does not have it and every suite fails to
+      # import. Locally this is masked by a previous build.
+      - name: Build
+        run: npx opennextjs-cloudflare build
+
+      - name: Test
+        run: npm test
+
+      # Cloudflare's limit is 64 MiB uncompressed on every plan, so this is a
+      # regression alarm rather than a deploy gate: a sudden jump means a heavy
+      # dependency landed in the Worker, which costs startup time before size.
+      - name: Check bundle size
+        run: npm run check:size
