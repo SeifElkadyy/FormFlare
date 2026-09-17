@@ -7,9 +7,8 @@ Format: date — what — why.
 
 ## Current state (2026-09-17)
 
-**v0.1.0 is released and public.** MIT. Repo: https://github.com/SeifElkadyy/FormFlare
-— annotated tag `v0.1.0` on `main` (`d137ae8`), release notes at
-https://github.com/SeifElkadyy/FormFlare/releases/tag/v0.1.0.
+**v0.2.0 is the current release.** MIT. Repo: https://github.com/SeifElkadyy/FormFlare
+— annotated tag `v0.2.0` on `main`. v0.1.0 remains at `d137ae8`.
 
 Phases **0–6 are done**. That is the v1 product from the plan: Deploy to Cloudflare
 button, `/setup` wizard, projects/forms, `POST /f/:publicId`, waitlists, spam layers,
@@ -24,9 +23,6 @@ Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
 
 - **README screenshot / demo GIF / live demo** — waiting on final brand (logo, colour,
   theme). Do not shoot the current UI for launch assets.
-- **Tag v0.2.0** when this work is verified — the in-app banner compares against GitHub
-  release tags, so it stays dark until that tag exists. Do not bump `package.json`
-  until the release commit.
 - **Later from the plan** — Workers AI spam scoring; Telegram presets; n8n/Zapier
   templates; per-form analytics; tags, notes and a lead pipeline; scheduled D1 → R2
   backups and GDPR delete-by-email; TypeScript SDK and React component; team members
