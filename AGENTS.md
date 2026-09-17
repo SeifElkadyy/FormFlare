@@ -79,6 +79,12 @@ dependency.
 - Product name lives in `src/lib/brand.ts`, `wrangler.jsonc` and `package.json` only.
 - Keep the UI quiet and minimal; every empty state explains the next step.
 - Before committing: `npm run lint && npm run typecheck && npm test`.
+- **Tag stable releases only — `vMAJOR.MINOR.PATCH`, no suffixes.** Deployed copies
+  find updates by comparing their `package.json` version against our release tags
+  (`scripts/check-update.mjs`), and that comparison deliberately refuses anything with
+  a pre-release suffix rather than trying to order it. A `v1.0.0-beta.1` tag is ignored
+  by every deployer's updater. Bump `version` in `package.json` in the release commit,
+  so a fresh clone knows which release it is on.
 
 ## Ask the human before
 

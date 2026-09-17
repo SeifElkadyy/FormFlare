@@ -53,7 +53,26 @@ function lines(value) {
   return value.split("\n").filter(Boolean);
 }
 
-/** Compare semver-ish tags without pulling in a dependency for it. */
+/**
+ * FormFlare tags stable releases only: vMAJOR.MINOR.PATCH, nothing else.
+ *
+ * Anything with a pre-release suffix is ignored rather than ordered. Comparing
+ * "0.2.0-beta.1" numerically yields NaN, and every NaN comparison is false, so a
+ * pre-release would silently read as *equal* to the stable release of the same
+ * number and could be picked as latest. Refusing to parse it is the honest
+ * option — ordering pre-releases properly is real semver work that buys nothing
+ * here, since we do not publish them.
+ */
+const STABLE_TAG = /^v?\d+\.\d+\.\d+$/;
+
+function isStable(tag) {
+  return STABLE_TAG.test(tag.trim());
+}
+
+/**
+ * Compare two stable tags. Numeric per component, so v0.10.0 correctly beats
+ * v0.9.0 (a string compare would not). Callers must filter with isStable first.
+ */
 function compareVersions(a, b) {
   const pa = a.replace(/^v/, "").split(".").map(Number);
   const pb = b.replace(/^v/, "").split(".").map(Number);
@@ -103,9 +122,22 @@ function writePending(items) {
 
 const localVersion = JSON.parse(readFileSync("package.json", "utf8")).version;
 
+if (!isStable(localVersion)) {
+  // Nothing sensible to compare against, and guessing would either spam a bogus
+  // update or hide a real one. Say so and stop.
+  console.log(
+    `package.json has version "${localVersion}", which is not a plain MAJOR.MINOR.PATCH.\n` +
+      "FormFlare releases are always stable versions, so it cannot tell which release this copy is on.\n" +
+      "Set it to the FormFlare version you are running and the next check will work.",
+  );
+  process.exit(0);
+}
+
 const releases = await githubJson(`/repos/${UPSTREAM_REPO}/releases?per_page=100`);
 const published = releases
-  .filter((release) => !release.draft && !release.prerelease)
+  // Both checks matter: the API flag is only set if whoever cut the release
+  // ticked the box, so a tag named -beta.1 can arrive marked as stable.
+  .filter((release) => !release.draft && !release.prerelease && isStable(release.tag_name))
   .map((release) => ({ tag: release.tag_name, name: release.name, url: release.html_url, body: release.body ?? "" }))
   .sort((a, b) => compareVersions(a.tag, b.tag));
 
