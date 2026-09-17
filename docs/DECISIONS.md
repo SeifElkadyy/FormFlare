@@ -37,6 +37,49 @@ Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
 
 ---
 
+## 2026-09-18 — `'unsafe-eval'` in CSP, development only
+
+React 19 logs `eval() is not supported in this environment` under `next dev` unless
+`script-src` includes `'unsafe-eval'`. It uses `eval()` to reconstruct server-side
+error stacks in the browser; it never does this in production.
+
+The production CSP is unchanged. `next.config.ts` adds `'unsafe-eval'` only when
+`NODE_ENV === "development"`, so the OpenNext/workerd build still ships without it.
+
+---
+
+## 2026-09-17 — Light-first dashboard shell
+
+The v0.1.0 UI was a top bar of links on a `prefers-color-scheme: dark` body. That made
+dark mode the required look on any machine set to dark, and it did not read as a
+dashboard.
+
+**Default is light.** Dark is an explicit toggle stored in `localStorage`
+(`formflare-theme=dark`). The OS preference is ignored — Tailwind's `dark:` variant is
+rebound to `.dark` on `<html>`.
+
+Color stays light-first (`#f4f6fb` canvas, `#0b57d0` primary). The shell is FormFlare's
+own workspace: grouped sidebar (Collect / Connect), a solid **New form** button, an
+inset rounded content panel, compact bordered search, and two-line submission rows.
+It is **not** a Mailflare/Gmail clone.
+
+The in-app update banner from Next up is **not** in this change.
+
+---
+
+## 2026-09-17 — UI polish values
+
+Motion and surface recipes follow better-ui exact values: press `scale(0.96)` at 150ms,
+`cubic-bezier(0.2, 0, 0, 1)`, shadow-as-border instead of decorative borders, concentric
+radii on nested surfaces, theme-switch transition suppression, and hover lifts gated to
+`(hover: hover) and (pointer: fine)`. Create/add flows stay in native `<dialog>`s, not
+inline page forms.
+
+Icons are `lucide-react` (stroke 1.75) except the brand flame. Appearance lives only in
+the workspace header, not the account card.
+
+---
+
 ## 2026-09-17 — Phase 0
 
 ### Verified against current docs (plan asked for confirmation)
@@ -878,6 +921,10 @@ is skippable.
 > static rendering cannot supply — pages would render but never hydrate, so every form
 > silently stops working. Shipping a strict-looking CSP that breaks the app is worse
 > than an honest one. Tightening this needs nonce support plus fully dynamic rendering.
+>
+> **`'unsafe-eval'` is added only in `next dev`.** React uses `eval()` there to
+> reconstruct server-side error stacks. Production React never calls `eval()`, so the
+> shipped CSP stays without it.
 
 `challenges.cloudflare.com` is allowed in `script-src` and `frame-src`, or Turnstile
 cannot load and no form with a captcha can be submitted.

@@ -2,7 +2,9 @@ import { desc } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/guard";
 import { forms, webhookDeliveries, webhooks } from "@/lib/db/schema";
 import { getServices } from "@/lib/env";
-import { CreateWebhookForm } from "./create-webhook";
+import { PageHeader } from "@/components/page-header";
+import { emptyClass } from "@/lib/ui";
+import { CreateWebhookDialog } from "./create-webhook";
 import { WebhookRow } from "./webhook-row";
 
 export const dynamic = "force-dynamic";
@@ -21,23 +23,21 @@ export default async function WebhooksPage() {
     .limit(50);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Webhooks</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Send each submission to any https endpoint, signed so the receiver can verify it came from
-          you.
-        </p>
-      </div>
-
-      <CreateWebhookForm forms={formRows} />
+    <div className="flex h-full min-h-0 flex-col">
+      <PageHeader
+        title="Webhooks"
+        description="Send each submission to any https endpoint, signed so the receiver can verify it came from you."
+        count={rows.length}
+        actions={<CreateWebhookDialog forms={formRows} />}
+      />
 
       {rows.length === 0 ? (
-        <p className="rounded-lg border border-black/[.08] p-6 text-sm text-zinc-600 dark:border-white/[.145] dark:text-zinc-400">
-          No webhooks yet. Add one above to forward submissions to n8n, Slack, or your own endpoint.
+        <p className={emptyClass}>
+          No webhooks yet. Press <strong>Add webhook</strong> to forward submissions to n8n, Slack,
+          or your own endpoint.
         </p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
           {rows.map((hook) => (
             <WebhookRow
               key={hook.id}

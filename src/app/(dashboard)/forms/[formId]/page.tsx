@@ -1,11 +1,15 @@
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/guard";
 import { forms } from "@/lib/db/schema";
 import { getServices } from "@/lib/env";
 import { parseOrigins } from "@/lib/spam/origin";
 import { effectiveFields } from "@/lib/submissions/fields";
+import { PageHeader } from "@/components/page-header";
+import { ChevronRightIcon } from "@/components/icons";
+import { btnSecondary, cardClass, codeBlockClass, sectionTitle } from "@/lib/ui";
 import { FormSettings } from "./form-settings";
 
 export const dynamic = "force-dynamic";
@@ -27,23 +31,24 @@ export default async function FormDetailPage({ params }: { params: Promise<{ for
   const endpoint = `${proto}://${host}/f/${form.publicId}`;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{form.name}</h1>
-        <p className="mt-1 font-mono text-xs break-all text-zinc-600 dark:text-zinc-400">
-          {endpoint}
-        </p>
-      </div>
+    <div className="flex h-full min-h-0 flex-col">
+      <PageHeader
+        title={form.name}
+        description={<span className="font-mono text-xs break-all">{endpoint}</span>}
+        actions={
+          <Link href={`/forms/${form.id}/preview`} className={`${btnSecondary} no-underline`}>
+            Preview
+            <span className="translate-x-px">
+              <ChevronRightIcon />
+            </span>
+          </Link>
+        }
+      />
 
-      <p>
-        <a href={`/forms/${form.id}/preview`} className="text-sm underline">
-          Preview this form &rarr;
-        </a>
-      </p>
-
-      <section className="space-y-2">
-        <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Embed</h2>
-        <pre className="overflow-x-auto rounded-lg border border-black/[.08] p-4 text-xs dark:border-white/[.145]">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-6">
+      <section className={cardClass}>
+        <h2 className={sectionTitle}>Embed</h2>
+        <pre className={`${codeBlockClass} mt-3`}>
           <code>{embedSnippet(endpoint, form.honeypotField, form.mode, form.fieldsJson)}</code>
         </pre>
       </section>
@@ -64,6 +69,7 @@ export default async function FormDetailPage({ params }: { params: Promise<{ for
           uploadsAvailable: storage.available,
         }}
       />
+      </div>
     </div>
   );
 }

@@ -3,6 +3,8 @@ import { requireUser } from "@/lib/auth/guard";
 import { forms } from "@/lib/db/schema";
 import { getServices } from "@/lib/env";
 import { listSubmissions, parseFilters } from "@/lib/submissions/query";
+import { PageHeader } from "@/components/page-header";
+import { btnGhost, emptyClass } from "@/lib/ui";
 import { InboxFilters } from "./filters";
 import { SubmissionCard } from "./submission-card";
 
@@ -25,7 +27,6 @@ export default async function InboxPage({
   const page = await listSubmissions(db, filters, params.cursor ?? null);
   const formRows = await db.select({ id: forms.id, name: forms.name }).from(forms);
 
-  // Carry the filters into the "next page" link so paging does not reset them.
   const nextParams = new URLSearchParams(search);
   if (page.nextCursor) nextParams.set("cursor", page.nextCursor);
 
@@ -35,45 +36,38 @@ export default async function InboxPage({
   const hasFilters = Boolean(
     filters.formId || filters.status || filters.search || filters.from || filters.to,
   );
-
-  // Filters and exports are noise on an empty inbox: with nothing to narrow down they
-  // are five controls that do nothing. They appear as soon as the first submission does,
-  // and stay visible while a filter is active so it can always be cleared.
   const showControls = page.items.length > 0 || hasFilters;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight">Inbox</h1>
+    <div className="flex h-full min-h-0 flex-col">
+      <PageHeader
+        title="Inbox"
+        description="Incoming submissions from your forms."
+        count={page.items.length}
+        actions={
+          showControls ? (
+            <>
+              <a href={`/api/export?format=csv&${exportParams}`} className={`${btnGhost} no-underline`}>
+                Export CSV
+              </a>
+              <a href={`/api/export?format=json&${exportParams}`} className={`${btnGhost} no-underline`}>
+                JSON
+              </a>
+            </>
+          ) : null
+        }
+      />
 
-        {showControls && (
-          <div className="flex items-center gap-3 text-sm">
-            <a
-              href={`/api/export?format=csv&${exportParams}`}
-              className="rounded-md border border-black/[.12] px-3 py-1.5 hover:bg-black/[.04] focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-white/[.18] dark:hover:bg-white/[.06]"
-            >
-              Export CSV
-            </a>
-            <a
-              href={`/api/export?format=json&${exportParams}`}
-              className="rounded-md border border-black/[.12] px-3 py-1.5 hover:bg-black/[.04] focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-white/[.18] dark:hover:bg-white/[.06]"
-            >
-              JSON
-            </a>
-          </div>
-        )}
-      </div>
-
-      {showControls && <InboxFilters forms={formRows} current={params} />}
+      {showControls ? <InboxFilters forms={formRows} current={params} /> : null}
 
       {page.items.length === 0 ? (
-        <p className="rounded-lg border border-black/[.08] p-6 text-sm text-zinc-600 dark:border-white/[.145] dark:text-zinc-400">
+        <p className={emptyClass}>
           {hasFilters ? (
             "No submissions match these filters."
           ) : formRows.length === 0 ? (
             <>
               No submissions yet — and no forms to receive them.{" "}
-              <Link href="/forms" className="font-medium underline">
+              <Link href="/forms?new=1" className="font-medium text-blue-700 underline">
                 Create your first form
               </Link>{" "}
               to get an endpoint.
@@ -84,7 +78,7 @@ export default async function InboxPage({
         </p>
       ) : (
         <>
-          <ul className="space-y-3">
+          <ul className="min-h-0 flex-1 overflow-y-auto">
             {page.items.map((row) => (
               <SubmissionCard
                 key={row.id}
@@ -102,16 +96,13 @@ export default async function InboxPage({
             ))}
           </ul>
 
-          {page.nextCursor && (
-            <nav aria-label="Pagination">
-              <Link
-                href={`/inbox?${nextParams}`}
-                className="inline-block rounded-md border border-black/[.12] px-4 py-2 text-sm hover:bg-black/[.04] focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-white/[.18] dark:hover:bg-white/[.06]"
-              >
+          {page.nextCursor ? (
+            <nav aria-label="Pagination" className="border-t border-neutral-100 px-6 py-3 dark:border-neutral-800">
+              <Link href={`/inbox?${nextParams}`} className={`${btnGhost} no-underline`}>
                 Load older submissions
               </Link>
             </nav>
-          )}
+          ) : null}
         </>
       )}
     </div>

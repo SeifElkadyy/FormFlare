@@ -6,6 +6,8 @@ import { requireUser } from "@/lib/auth/guard";
 import { forms } from "@/lib/db/schema";
 import { getServices } from "@/lib/env";
 import { effectiveFields } from "@/lib/submissions/fields";
+import { PageHeader } from "@/components/page-header";
+import { btnPrimary, cardClass, inputClass, labelClass, textareaClass } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -39,20 +41,13 @@ export default async function FormPreviewPage({ params }: { params: Promise<{ fo
   const visible = effectiveFields(form.fieldsJson, form.mode).filter((f) => f.type !== "file");
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Preview — {form.name}</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          A real submission. Use it to check your fields and Turnstile keys before pointing a site
-          at the endpoint.
-        </p>
-      </div>
+    <div className="flex h-full min-h-0 flex-col">
+      <PageHeader
+        title={`Preview — ${form.name}`}
+        description="A real submission. Use it to check your fields and Turnstile keys before pointing a site at the endpoint."
+      />
 
-      <form
-        action={endpoint}
-        method="POST"
-        className="max-w-md space-y-4 rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]"
-      >
+      <form action={endpoint} method="POST" className={`${cardClass} mx-6 my-6 flex max-w-md flex-col gap-4`}>
         {/* Hidden from people, filled by bots. */}
         <input
           type="text"
@@ -64,8 +59,8 @@ export default async function FormPreviewPage({ params }: { params: Promise<{ fo
         />
 
         {visible.map((field) => (
-          <div key={field.name} className="space-y-1">
-            <label htmlFor={`preview-${field.name}`} className="block text-sm font-medium">
+          <div key={field.name} className="flex flex-col gap-1">
+            <label htmlFor={`preview-${field.name}`} className={labelClass}>
               {field.name}
             </label>
             {field.type === "textarea" ? (
@@ -74,7 +69,7 @@ export default async function FormPreviewPage({ params }: { params: Promise<{ fo
                 name={field.name}
                 required={field.required}
                 rows={3}
-                className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-white/[.18]"
+                className={textareaClass}
               />
             ) : (
               <input
@@ -84,13 +79,13 @@ export default async function FormPreviewPage({ params }: { params: Promise<{ fo
                   field.type === "email" ? "email" : field.type === "number" ? "number" : "text"
                 }
                 required={field.required}
-                className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-white/[.18]"
+                className={inputClass}
               />
             )}
           </div>
         ))}
 
-        {form.turnstileSiteKey && (
+        {form.turnstileSiteKey ? (
           <>
             <div className="cf-turnstile" data-sitekey={form.turnstileSiteKey} />
             <Script
@@ -98,12 +93,9 @@ export default async function FormPreviewPage({ params }: { params: Promise<{ fo
               strategy="afterInteractive"
             />
           </>
-        )}
+        ) : null}
 
-        <button
-          type="submit"
-          className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background focus-visible:outline-2 focus-visible:outline-offset-2"
-        >
+        <button type="submit" className={`${btnPrimary} self-start`}>
           Send test submission
         </button>
       </form>

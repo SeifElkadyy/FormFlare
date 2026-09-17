@@ -12,7 +12,7 @@ import { publicId as newPublicId, ulid } from "@/lib/ids";
 import { deleteForm as deleteFormWithFiles } from "@/lib/submissions/delete";
 import { invalidateForm } from "@/lib/submissions/form-cache";
 
-export type FormState = { error?: string };
+export type FormState = { error?: string; created?: boolean };
 
 /**
  * Every action here calls requireUserForMutation(), which checks the session AND the
@@ -55,7 +55,7 @@ export async function createFormAction(_prev: FormState, formData: FormData): Pr
   });
 
   revalidatePath("/forms");
-  return {};
+  return { created: true };
 }
 
 export async function updateFormAction(_prev: FormState, formData: FormData): Promise<FormState> {

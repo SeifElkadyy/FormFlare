@@ -4,11 +4,13 @@ import { isSetupCompleted } from "@/lib/db/settings";
 import { anyUserExists } from "@/lib/auth/setup";
 import { runSystemChecks } from "@/lib/setup/checks";
 import { setupTokenOk } from "@/lib/auth/setup-token";
+import { AuthShell } from "@/components/shell";
+import { cardClass, pillClass } from "@/lib/ui";
 import { SetupForm } from "./setup-form";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_MARK: Record<string, string> = { ok: "✅", warn: "⚠️", fail: "❌" };
+const STATUS_LABEL: Record<string, string> = { ok: "Ready", warn: "Warning", fail: "Blocked" };
 
 export default async function SetupPage({
   searchParams,
@@ -29,47 +31,42 @@ export default async function SetupPage({
   const blocked = checks.some((c) => c.status === "fail");
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center px-6 py-16">
-      <h1 className="text-2xl font-semibold tracking-tight">Set up FormFlare</h1>
-      <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-        This runs once. Afterwards this page is disabled.
-      </p>
+    <AuthShell>
+      <div className="w-full max-w-2xl">
+        <h1 className="text-2xl font-semibold tracking-tight">Set up FormFlare</h1>
+        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">This runs once. Afterwards this page is disabled.</p>
 
-      <section className="mt-8">
-        <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400">System check</h2>
-        <ul className="mt-3 space-y-3">
-          {checks.map((check) => (
-            <li
-              key={check.name}
-              className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]"
-            >
-              <div className="flex items-baseline gap-2">
-                <span aria-hidden>{STATUS_MARK[check.status]}</span>
-                <span className="font-medium">{check.name}</span>
-              </div>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{check.detail}</p>
-              {check.fix && (
-                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  <span className="font-medium">Fix:</span> {check.fix}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
+        <section className="mt-8">
+          <h2 className="text-sm font-medium text-neutral-500">System check</h2>
+          <ul className="mt-3 flex flex-col gap-3">
+            {checks.map((check) => (
+              <li key={check.name} className={cardClass}>
+                <div className="flex items-baseline gap-2">
+                  <span className={pillClass}>{STATUS_LABEL[check.status] ?? check.status}</span>
+                  <span className="font-medium">{check.name}</span>
+                </div>
+                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{check.detail}</p>
+                {check.fix ? (
+                  <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+                    <span className="font-medium text-neutral-900 dark:text-neutral-100">Fix:</span> {check.fix}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
 
-      <section className="mt-8">
-        <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-          Create your admin account
-        </h2>
-        {blocked ? (
-          <p className="mt-3 rounded-lg border border-black/[.08] p-4 text-sm text-zinc-600 dark:border-white/[.145] dark:text-zinc-400">
-            Fix the failing checks above, redeploy, then reload this page.
-          </p>
-        ) : (
-          <SetupForm token={token} />
-        )}
-      </section>
-    </div>
+        <section className="mt-8 rounded-2xl bg-white p-6 shadow-[var(--shadow-border)] dark:bg-neutral-900">
+          <h2 className="text-sm font-medium text-neutral-500">Create your admin account</h2>
+          {blocked ? (
+            <p className="mt-3 text-sm leading-6 text-neutral-500">
+              Fix the failing checks above, redeploy, then reload this page.
+            </p>
+          ) : (
+            <SetupForm token={token} />
+          )}
+        </section>
+      </div>
+    </AuthShell>
   );
 }

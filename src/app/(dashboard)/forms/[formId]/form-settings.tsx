@@ -2,6 +2,18 @@
 
 import { useActionState } from "react";
 import { deleteFormAction, updateFormAction, type FormState } from "../actions";
+import {
+  alertClass,
+  btnDanger,
+  btnPrimary,
+  cardClass,
+  errorClass,
+  hintClass,
+  inputClass,
+  labelClass,
+  sectionTitle,
+  textareaClass,
+} from "@/lib/ui";
 
 const initialState: FormState = {};
 
@@ -27,98 +39,96 @@ export function FormSettings({ form }: Props) {
   const [state, formAction, pending] = useActionState(updateFormAction, initialState);
 
   return (
-    <>
-      <form action={formAction} className="space-y-4">
-        <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Settings</h2>
+    <div className="flex flex-col gap-6">
+      <form action={formAction} className="flex flex-col gap-6">
         <input type="hidden" name="id" value={form.id} />
 
-        <div className="space-y-1">
-          <label htmlFor="name" className="block text-sm font-medium">
-            Name
-          </label>
-          <input
-            id="name"
-            name="name"
-            required
-            defaultValue={form.name}
-            className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm dark:border-white/[.18]"
-          />
-        </div>
+        <section className={`${cardClass} flex flex-col gap-4`}>
+          <h2 className={sectionTitle}>Form</h2>
 
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="active" defaultChecked={form.active} />
-          Accepting submissions
-        </label>
-        <p className="text-xs text-zinc-600 dark:text-zinc-400">
-          Turning this off can take up to 30 seconds to apply everywhere.
-        </p>
-
-        <div className="space-y-1">
-          <label htmlFor="redirectUrl" className="block text-sm font-medium">
-            Redirect after submit
-          </label>
-          <input
-            id="redirectUrl"
-            name="redirectUrl"
-            type="url"
-            placeholder="https://yoursite.com/thanks"
-            defaultValue={form.redirectUrl ?? ""}
-            className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm dark:border-white/[.18]"
-          />
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">
-            Leave empty to use the built-in thank-you page.
-          </p>
-        </div>
-
-        <div className="space-y-1">
-          <label htmlFor="allowedOrigins" className="block text-sm font-medium">
-            Allowed origins
-          </label>
-          <textarea
-            id="allowedOrigins"
-            name="allowedOrigins"
-            rows={3}
-            placeholder={"https://yoursite.com\nhttps://www.yoursite.com"}
-            defaultValue={form.allowedOrigins}
-            className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 font-mono text-xs dark:border-white/[.18]"
-          />
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">
-            One per line. Empty means any site may submit. Required before a custom
-            <code className="mx-1">_redirect</code> is honoured.
-          </p>
-        </div>
-
-        <div className="space-y-1">
-          <label htmlFor="notifyEmails" className="block text-sm font-medium">
-            Email alerts to
-          </label>
-          <textarea
-            id="notifyEmails"
-            name="notifyEmails"
-            rows={2}
-            placeholder={"you@yourdomain.com"}
-            defaultValue={form.notifyEmails}
-            className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 font-mono text-xs dark:border-white/[.18]"
-          />
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">
-            One per line. Needs Cloudflare Email Sending; the app works without it.
-          </p>
-        </div>
-
-        {!form.uploadsAvailable && (
-          <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
-            File uploads are off. This instance has no R2 bucket, so a form with a file field will
-            reject the upload. To enable it: turn on R2 in the Cloudflare dashboard, create a
-            bucket, bind it as <code>BUCKET</code> in <code>wrangler.jsonc</code>, and redeploy.
-            Cloudflare asks for a payment method to activate R2, even on the free tier.
-          </p>
-        )}
-
-        <fieldset className="space-y-2 rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]">
-          <legend className="px-1 text-sm font-medium">Auto-reply</legend>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="name" className={labelClass}>
+              Name
+            </label>
+            <input id="name" name="name" required defaultValue={form.name} className={inputClass} />
+          </div>
 
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="autoReplyEnabled" defaultChecked={form.autoReplyEnabled} />
+            <input type="checkbox" name="active" defaultChecked={form.active} className="accent-blue-600" />
+            Accepting submissions
+          </label>
+          <p className={hintClass}>Turning this off can take up to 30 seconds to apply everywhere.</p>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="redirectUrl" className={labelClass}>
+              Redirect after submit
+            </label>
+            <input
+              id="redirectUrl"
+              name="redirectUrl"
+              type="url"
+              placeholder="https://yoursite.com/thanks"
+              defaultValue={form.redirectUrl ?? ""}
+              className={inputClass}
+            />
+            <p className={hintClass}>Leave empty to use the built-in thank-you page.</p>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="allowedOrigins" className={labelClass}>
+              Allowed origins
+            </label>
+            <textarea
+              id="allowedOrigins"
+              name="allowedOrigins"
+              rows={3}
+              placeholder={"https://yoursite.com\nhttps://www.yoursite.com"}
+              defaultValue={form.allowedOrigins}
+              className={`${textareaClass} font-mono text-xs`}
+            />
+            <p className={hintClass}>
+              One per line. Empty means any site may submit. Required before a custom
+              <code className="mx-1">_redirect</code> is honoured.
+            </p>
+          </div>
+
+          {!form.uploadsAvailable ? (
+            <p className={alertClass}>
+              File uploads are off. This instance has no R2 bucket, so a form with a file field will
+              reject the upload. To enable it: turn on R2 in the Cloudflare dashboard, create a
+              bucket, bind it as <code>BUCKET</code> in <code>wrangler.jsonc</code>, and redeploy.
+              Cloudflare asks for a payment method to activate R2, even on the free tier.
+            </p>
+          ) : null}
+        </section>
+
+        <section className={`${cardClass} flex flex-col gap-4`}>
+          <h2 className={sectionTitle}>Notifications</h2>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="notifyEmails" className={labelClass}>
+              Email alerts to
+            </label>
+            <textarea
+              id="notifyEmails"
+              name="notifyEmails"
+              rows={2}
+              placeholder={"you@yourdomain.com"}
+              defaultValue={form.notifyEmails}
+              className={`${textareaClass} font-mono text-xs`}
+            />
+            <p className={hintClass}>
+              One per line. Needs Cloudflare Email Sending; the app works without it.
+            </p>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="autoReplyEnabled"
+              defaultChecked={form.autoReplyEnabled}
+              className="accent-blue-600"
+            />
             Send a reply to the submitter
           </label>
 
@@ -127,14 +137,14 @@ export function FormSettings({ form }: Props) {
             owner's domain. Turnstile is the difference between that being a courtesy
             and being an open relay for a spammer.
           */}
-          <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
-            ⚠️ Turn on Turnstile before enabling this. Auto-replies are sent to whatever address was
+          <p className={alertClass}>
+            Turn on Turnstile before enabling this. Auto-replies are sent to whatever address was
             submitted, so without a bot check your domain can be used to mail strangers. FormFlare
             also limits one auto-reply per address per 24 hours.
           </p>
 
-          <div className="space-y-1">
-            <label htmlFor="autoReplySubject" className="block text-sm font-medium">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="autoReplySubject" className={labelClass}>
               Subject
             </label>
             <input
@@ -142,12 +152,12 @@ export function FormSettings({ form }: Props) {
               name="autoReplySubject"
               defaultValue={form.autoReplySubject ?? ""}
               placeholder="Thanks — we got your message"
-              className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm dark:border-white/[.18]"
+              className={inputClass}
             />
           </div>
 
-          <div className="space-y-1">
-            <label htmlFor="autoReplyBody" className="block text-sm font-medium">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="autoReplyBody" className={labelClass}>
               Message
             </label>
             <textarea
@@ -156,75 +166,77 @@ export function FormSettings({ form }: Props) {
               rows={3}
               defaultValue={form.autoReplyBody ?? ""}
               placeholder="Thanks for getting in touch. We'll be in contact soon."
-              className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm dark:border-white/[.18]"
+              className={textareaClass}
             />
-            <p className="text-xs text-zinc-600 dark:text-zinc-400">
+            <p className={hintClass}>
               Your text only — nothing the submitter typed is echoed back, so the message cannot be
               used to relay someone else&rsquo;s content.
             </p>
           </div>
-        </fieldset>
+        </section>
 
-        <div className="space-y-1">
-          <label htmlFor="turnstileSiteKey" className="block text-sm font-medium">
-            Turnstile site key
-          </label>
-          <input
-            id="turnstileSiteKey"
-            name="turnstileSiteKey"
-            defaultValue={form.turnstileSiteKey ?? ""}
-            className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm dark:border-white/[.18]"
-          />
-        </div>
+        <section className={`${cardClass} flex flex-col gap-4`}>
+          <h2 className={sectionTitle}>Spam protection</h2>
 
-        <div className="space-y-1">
-          <label htmlFor="turnstileSecret" className="block text-sm font-medium">
-            Turnstile secret
-          </label>
-          <input
-            id="turnstileSecret"
-            name="turnstileSecret"
-            type="password"
-            autoComplete="off"
-            placeholder={form.hasTurnstileSecret ? "•••••••• (leave blank to keep)" : ""}
-            className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm dark:border-white/[.18]"
-          />
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">Encrypted before it is stored.</p>
-        </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="turnstileSiteKey" className={labelClass}>
+              Turnstile site key
+            </label>
+            <input
+              id="turnstileSiteKey"
+              name="turnstileSiteKey"
+              defaultValue={form.turnstileSiteKey ?? ""}
+              className={inputClass}
+            />
+          </div>
 
-        {state.error && (
-          <p role="alert" className="text-sm text-red-600 dark:text-red-400">
-            {state.error}
-          </p>
-        )}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="turnstileSecret" className={labelClass}>
+              Turnstile secret
+            </label>
+            <input
+              id="turnstileSecret"
+              name="turnstileSecret"
+              type="password"
+              autoComplete="off"
+              placeholder={form.hasTurnstileSecret ? "•••••••• (leave blank to keep)" : ""}
+              className={inputClass}
+            />
+            <p className={hintClass}>Encrypted before it is stored.</p>
+          </div>
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-60"
-        >
-          {pending ? "Saving…" : "Save settings"}
-        </button>
+          {state.error ? (
+            <p role="alert" className={errorClass}>
+              {state.error}
+            </p>
+          ) : null}
+
+          <button type="submit" disabled={pending} className={`${btnPrimary} self-start`}>
+            {pending ? "Saving…" : "Save settings"}
+          </button>
+        </section>
       </form>
 
-      <form
-        action={deleteFormAction}
-        className="rounded-lg border border-red-500/30 p-4"
-        onSubmit={(event) => {
-          if (!confirm("Delete this form, all its submissions and uploaded files?")) {
-            event.preventDefault();
-          }
-        }}
-      >
-        <input type="hidden" name="id" value={form.id} />
-        <h2 className="text-sm font-medium text-red-600 dark:text-red-400">Danger zone</h2>
-        <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+      <section className={`${cardClass} border-0`}>
+        <h2 className="text-[13px] font-medium text-red-700 dark:text-red-400">Danger zone</h2>
+        <p className={`mt-1 ${hintClass}`}>
           Deletes the form, its submissions and every uploaded file. Cannot be undone.
         </p>
-        <button type="submit" className="mt-3 text-sm text-red-600 underline dark:text-red-400">
-          Delete form
-        </button>
-      </form>
-    </>
+        <form
+          action={deleteFormAction}
+          className="mt-3"
+          onSubmit={(event) => {
+            if (!confirm("Delete this form, all its submissions and uploaded files?")) {
+              event.preventDefault();
+            }
+          }}
+        >
+          <input type="hidden" name="id" value={form.id} />
+          <button type="submit" className={btnDanger}>
+            Delete form
+          </button>
+        </form>
+      </section>
+    </div>
   );
 }

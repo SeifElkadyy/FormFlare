@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { loginAction, type LoginState } from "./actions";
+import { btnPrimary, errorClass, inputClass, labelClass } from "@/lib/ui";
 
 const initialState: LoginState = {};
 
@@ -9,9 +10,9 @@ export function LoginForm() {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
 
   return (
-    <form action={formAction} className="mt-6 space-y-4">
-      <div className="space-y-1">
-        <label htmlFor="email" className="block text-sm font-medium">
+    <form action={formAction} className="mt-6 flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <label htmlFor="email" className={labelClass}>
           Email
         </label>
         <input
@@ -23,12 +24,12 @@ export function LoginForm() {
           // Repopulated after a failed attempt so the user only retypes the password.
           defaultValue={state.email ?? ""}
           key={state.email ?? ""}
-          className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm dark:border-white/[.18]"
+          className={inputClass}
         />
       </div>
 
-      <div className="space-y-1">
-        <label htmlFor="password" className="block text-sm font-medium">
+      <div className="flex flex-col gap-1">
+        <label htmlFor="password" className={labelClass}>
           Password
         </label>
         <input
@@ -37,21 +38,17 @@ export function LoginForm() {
           type="password"
           required
           autoComplete="current-password"
-          className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm dark:border-white/[.18]"
+          className={inputClass}
         />
       </div>
 
-      {state.error && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+      {state.error ? (
+        <p role="alert" className={errorClass}>
           {state.error}
         </p>
-      )}
+      ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-60"
-      >
+      <button type="submit" disabled={pending} className={btnPrimary}>
         {pending ? "Signing in…" : "Sign in"}
       </button>
     </form>

@@ -1,26 +1,236 @@
 @import "tailwindcss";
 
+/*
+ * Light is the product default. Dark is an explicit `.dark` class on <html>,
+ * never prefers-color-scheme.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: #f4f6fb;
+  --foreground: #202124;
+  --card: #ffffff;
+  --muted: #eef3fb;
+  --muted-foreground: #5f6368;
+  --border: #dadce0;
+  --ring: #0b57d0;
+  --primary: #0b57d0;
+  --primary-foreground: #ffffff;
+  --search: #eaf1fb;
+  --row-hover: #eef3fb;
+  --danger: #c5221f;
+  --warning: #fef7e0;
+  --warning-foreground: #7c4a03;
+  --success: #137333;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --shadow-border:
+    0px 0px 0px 1px oklch(0 0 0 / 0.06),
+    0px 1px 2px -1px oklch(0 0 0 / 0.06),
+    0px 2px 4px 0px oklch(0 0 0 / 0.04);
+  --shadow-border-hover:
+    0px 0px 0px 1px oklch(0 0 0 / 0.08),
+    0px 1px 2px -1px oklch(0 0 0 / 0.08),
+    0px 2px 4px 0px oklch(0 0 0 / 0.06);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #1f1f1f;
+  --foreground: #e8eaed;
+  --card: #2d2e30;
+  --muted: #3c4043;
+  --muted-foreground: #9aa0a6;
+  --border: #5f6368;
+  --ring: #8ab4f8;
+  --primary: #8ab4f8;
+  --primary-foreground: #202124;
+  --search: #3c4043;
+  --row-hover: #3c4043;
+  --danger: #f28b82;
+  --warning: #41331c;
+  --warning-foreground: #fdd663;
+  --success: #81c995;
+  --shadow-border: 0 0 0 1px oklch(1 0 0 / 0.08);
+  --shadow-border-hover: 0 0 0 1px oklch(1 0 0 / 0.13);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-search: var(--search);
+  --color-row-hover: var(--row-hover);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+}
+
+.press {
+  transition-property: scale, background-color, color, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: var(--ease-out);
+}
+
+.press:active:not(:disabled) {
+  scale: 0.96;
+}
+
+.press:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.hover-reveal {
+  opacity: 0;
+  pointer-events: none;
+  transition-property: opacity;
+  transition-duration: 100ms;
+  transition-timing-function: var(--ease-out);
+}
+
+.hover-fade {
+  transition-property: opacity;
+  transition-duration: 100ms;
+  transition-timing-function: var(--ease-out);
+}
+
+.surface {
+  box-shadow: var(--shadow-border);
+  transition-property: box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .surface:hover {
+    box-shadow: var(--shadow-border-hover);
+  }
+
+  .row-hover:hover {
+    background-color: var(--row-hover);
+  }
+
+  .group:hover .hover-reveal,
+  .group:focus-within .hover-reveal {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .group:hover .hover-fade,
+  .group:focus-within .hover-fade {
+    opacity: 0;
+  }
+}
+
+dialog {
+  margin: auto;
+  transform-origin: center;
+}
+
+dialog[open] {
+  opacity: 1;
+  scale: 1;
+  transition:
+    opacity 200ms var(--ease-out),
+    scale 200ms var(--ease-out),
+    overlay 200ms var(--ease-out) allow-discrete,
+    display 200ms var(--ease-out) allow-discrete;
+}
+
+dialog[open]::backdrop {
+  background: oklch(0 0 0 / 0.4);
+  opacity: 1;
+  transition: opacity 200ms var(--ease-out);
+}
+
+@starting-style {
+  dialog[open] {
+    opacity: 0;
+    scale: 0.96;
+  }
+
+  dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+.hero-enter > * {
+  animation: hero-in 400ms var(--ease-out) both;
+}
+
+.hero-enter > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.hero-enter > *:nth-child(2) {
+  animation-delay: 100ms;
+}
+.hero-enter > *:nth-child(3) {
+  animation-delay: 200ms;
+}
+.hero-enter > *:nth-child(4) {
+  animation-delay: 300ms;
+}
+
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .press:active:not(:disabled) {
+    scale: 1;
+  }
+
+  dialog[open],
+  dialog[open]::backdrop,
+  .hero-enter > * {
+    animation: none;
+    transition: none;
+    transform: none;
+    filter: none;
+    opacity: 1;
+    scale: 1;
+  }
+
+  .hover-reveal,
+  .hover-fade,
+  .surface,
+  .press {
+    transition: none;
+  }
 }

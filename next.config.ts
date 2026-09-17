@@ -6,7 +6,7 @@ import type { NextConfig } from "next";
  * Applied via `headers()` rather than middleware, because middleware is skippable and
  * these need to hold on every response.
  *
- * ⚠️ CSP notes, both of which were verified against a real build rather than assumed:
+ * ⚠️ CSP notes, verified against a real build rather than assumed:
  *
  * - **`'unsafe-inline'` in `script-src` is required.** Next.js App Router inlines
  *   hydration bootstrap and flight data as inline `<script>` tags. A nonce-based policy
@@ -14,16 +14,29 @@ import type { NextConfig } from "next";
  *   rendering cannot supply — the pages would render but never hydrate, so every form
  *   silently stops working. Tightening this needs `next.config` nonce support plus
  *   fully dynamic rendering; noted as a follow-up rather than shipped broken.
+ * - **`'unsafe-eval'` is development-only.** React uses `eval()` in `next dev` to
+ *   reconstruct server-side error stacks in the browser. Production React never calls
+ *   `eval()`, and neither does the OpenNext/workerd build, so the production policy
+ *   stays without it.
  * - **Turnstile needs `challenges.cloudflare.com`** in `script-src` and `frame-src`, or
  *   the widget cannot load and no form with a captcha can be submitted.
  *
  * `frame-ancestors 'none'` is the one that matters most here: it stops the dashboard
  * being framed for clickjacking, and unlike `X-Frame-Options` it cannot be bypassed.
  */
+const isDev = process.env.NODE_ENV === "development";
+
 const CSP = [
   "default-src 'self'",
-  // See the note above: Next's inline hydration scripts require 'unsafe-inline'.
-  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+  // See the notes above: Next's inline hydration scripts require 'unsafe-inline'.
+  // React's dev-only eval() for error stacks requires 'unsafe-eval' under `next dev`.
+  [
+    "script-src 'self' 'unsafe-inline'",
+    isDev ? "'unsafe-eval'" : null,
+    "https://challenges.cloudflare.com",
+  ]
+    .filter(Boolean)
+    .join(" "),
   // Tailwind injects styles at runtime in dev; inline styles are low risk here.
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",

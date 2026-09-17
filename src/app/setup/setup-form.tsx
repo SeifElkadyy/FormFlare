@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { createOwnerAction, type SetupState } from "./actions";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/setup";
+import { btnPrimary, errorClass, hintClass, inputClass, labelClass } from "@/lib/ui";
 
 const initialState: SetupState = {};
 
@@ -10,11 +11,11 @@ export function SetupForm({ token }: { token?: string }) {
   const [state, formAction, pending] = useActionState(createOwnerAction, initialState);
 
   return (
-    <form action={formAction} className="mt-3 space-y-4">
-      {token && <input type="hidden" name="token" value={token} />}
+    <form action={formAction} className="mt-4 flex flex-col gap-4">
+      {token ? <input type="hidden" name="token" value={token} /> : null}
 
-      <div className="space-y-1">
-        <label htmlFor="email" className="block text-sm font-medium">
+      <div className="flex flex-col gap-1">
+        <label htmlFor="email" className={labelClass}>
           Email
         </label>
         <input
@@ -23,12 +24,12 @@ export function SetupForm({ token }: { token?: string }) {
           type="email"
           required
           autoComplete="username"
-          className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm dark:border-white/[.18]"
+          className={inputClass}
         />
       </div>
 
-      <div className="space-y-1">
-        <label htmlFor="password" className="block text-sm font-medium">
+      <div className="flex flex-col gap-1">
+        <label htmlFor="password" className={labelClass}>
           Password
         </label>
         <input
@@ -39,15 +40,15 @@ export function SetupForm({ token }: { token?: string }) {
           minLength={MIN_PASSWORD_LENGTH}
           autoComplete="new-password"
           aria-describedby="password-hint"
-          className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm dark:border-white/[.18]"
+          className={inputClass}
         />
-        <p id="password-hint" className="text-xs text-zinc-600 dark:text-zinc-400">
+        <p id="password-hint" className={hintClass}>
           At least {MIN_PASSWORD_LENGTH} characters.
         </p>
       </div>
 
-      <div className="space-y-1">
-        <label htmlFor="confirm" className="block text-sm font-medium">
+      <div className="flex flex-col gap-1">
+        <label htmlFor="confirm" className={labelClass}>
           Confirm password
         </label>
         <input
@@ -57,21 +58,17 @@ export function SetupForm({ token }: { token?: string }) {
           required
           minLength={MIN_PASSWORD_LENGTH}
           autoComplete="new-password"
-          className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm dark:border-white/[.18]"
+          className={inputClass}
         />
       </div>
 
-      {state.error && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+      {state.error ? (
+        <p role="alert" className={errorClass}>
           {state.error}
         </p>
-      )}
+      ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-60"
-      >
+      <button type="submit" disabled={pending} className={btnPrimary}>
         {pending ? "Creating account…" : "Create admin account"}
       </button>
     </form>

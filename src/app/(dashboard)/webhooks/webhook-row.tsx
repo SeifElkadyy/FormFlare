@@ -7,6 +7,7 @@ import {
   toggleWebhookAction,
   type WebhookState,
 } from "./actions";
+import { btnDanger, btnToolbar, errorClass, hintClass, pillClass } from "@/lib/ui";
 
 const initialState: WebhookState = {};
 
@@ -22,83 +23,75 @@ interface Props {
   }[];
 }
 
-const STATUS_MARK: Record<string, string> = { success: "✅", failed: "❌", pending: "⏳" };
-
 export function WebhookRow({ hook, deliveries }: Props) {
   const [testState, testAction, testing] = useActionState(testWebhookAction, initialState);
 
   return (
-    <li className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="font-mono text-xs break-all">{hook.url}</span>
-        <span className="text-xs text-zinc-600 dark:text-zinc-400">
-          {hook.formName}
-          {!hook.active && " · disabled"}
-        </span>
-      </div>
+    <li className="row-hover px-6 py-3.5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <span className="break-all font-mono text-xs text-neutral-800 dark:text-neutral-200">{hook.url}</span>
+          <p className={`mt-1 ${hintClass}`}>
+            {hook.formName}
+            {!hook.active ? " · disabled" : ""}
+          </p>
+        </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-        <form action={testAction}>
-          <input type="hidden" name="id" value={hook.id} />
-          <button
-            type="submit"
-            disabled={testing}
-            className="rounded-md border border-black/[.12] px-3 py-1 text-xs disabled:opacity-60 dark:border-white/[.18]"
+        <div className="flex flex-wrap items-center gap-3">
+          <form action={testAction}>
+            <input type="hidden" name="id" value={hook.id} />
+            <button type="submit" disabled={testing} className={btnToolbar}>
+              {testing ? "Sending…" : "Send test"}
+            </button>
+          </form>
+
+          <form action={toggleWebhookAction}>
+            <input type="hidden" name="id" value={hook.id} />
+            <button type="submit" className={btnToolbar}>
+              {hook.active ? "Disable" : "Enable"}
+            </button>
+          </form>
+
+          <form
+            action={deleteWebhookAction}
+            onSubmit={(event) => {
+              if (!confirm("Delete this webhook?")) event.preventDefault();
+            }}
           >
-            {testing ? "Sending…" : "Send test"}
-          </button>
-        </form>
-
-        <form action={toggleWebhookAction}>
-          <input type="hidden" name="id" value={hook.id} />
-          <button type="submit" className="text-xs text-zinc-600 underline dark:text-zinc-400">
-            {hook.active ? "Disable" : "Enable"}
-          </button>
-        </form>
-
-        <form
-          action={deleteWebhookAction}
-          onSubmit={(event) => {
-            if (!confirm("Delete this webhook?")) event.preventDefault();
-          }}
-        >
-          <input type="hidden" name="id" value={hook.id} />
-          <button type="submit" className="text-xs text-red-600 underline dark:text-red-400">
-            Delete
-          </button>
-        </form>
+            <input type="hidden" name="id" value={hook.id} />
+            <button type="submit" className={btnDanger}>
+              Delete
+            </button>
+          </form>
+        </div>
       </div>
 
-      {testState.error && (
-        <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">
+      {testState.error ? (
+        <p role="alert" className={`mt-2 ${errorClass}`}>
           Test failed: {testState.error}
         </p>
-      )}
+      ) : null}
 
-      {deliveries.length > 0 && (
+      {deliveries.length > 0 ? (
         <div className="mt-3">
-          <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Recent deliveries</p>
-          <ul className="mt-1 space-y-1">
+          <p className={`font-medium ${hintClass}`}>Recent deliveries</p>
+          <ul className="mt-1 flex flex-col gap-1">
             {deliveries.map((delivery) => (
-              <li
-                key={delivery.id}
-                className="flex flex-wrap gap-2 text-xs text-zinc-600 dark:text-zinc-400"
-              >
-                <span aria-hidden>{STATUS_MARK[delivery.status] ?? "·"}</span>
-                <span>{delivery.status}</span>
-                {delivery.lastStatusCode !== null && <span>HTTP {delivery.lastStatusCode}</span>}
-                {delivery.attempts > 1 && <span>{delivery.attempts} attempts</span>}
-                <span>
+              <li key={delivery.id} className={`flex flex-wrap items-center gap-2 ${hintClass}`}>
+                <span className={pillClass}>{delivery.status}</span>
+                {delivery.lastStatusCode !== null ? <span>HTTP {delivery.lastStatusCode}</span> : null}
+                {delivery.attempts > 1 ? <span>{delivery.attempts} attempts</span> : null}
+                <span className="tabular-nums">
                   {new Date(delivery.updatedAt).toISOString().slice(0, 19).replace("T", " ")}
                 </span>
-                {delivery.lastError && (
-                  <span className="text-red-600 dark:text-red-400">{delivery.lastError}</span>
-                )}
+                {delivery.lastError ? (
+                  <span className="text-red-700 dark:text-red-400">{delivery.lastError}</span>
+                ) : null}
               </li>
             ))}
           </ul>
         </div>
-      )}
+      ) : null}
     </li>
   );
 }

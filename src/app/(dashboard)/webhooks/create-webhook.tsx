@@ -1,78 +1,112 @@
 "use client";
 
+import { useState } from "react";
 import { useActionState } from "react";
+import { Modal } from "@/components/modal";
+import { PlusIcon } from "@/components/icons";
+import {
+  btnPrimary,
+  btnPrimaryLead,
+  codeBlockClass,
+  errorClass,
+  hintClass,
+  inputClass,
+  labelClass,
+  selectClass,
+} from "@/lib/ui";
 import { createWebhookAction, type WebhookState } from "./actions";
 
 const initialState: WebhookState = {};
 
-export function CreateWebhookForm({ forms }: { forms: { id: string; name: string }[] }) {
-  const [state, formAction, pending] = useActionState(createWebhookAction, initialState);
+export function CreateWebhookDialog({ forms }: { forms: { id: string; name: string }[] }) {
+  const [open, setOpen] = useState(false);
 
   return (
-    <div className="space-y-3">
-      <form
-        action={formAction}
-        className="flex flex-wrap items-end gap-3 rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]"
+    <>
+      <button type="button" className={btnPrimaryLead} onClick={() => setOpen(true)}>
+        <PlusIcon />
+        Add webhook
+      </button>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Add webhook"
+        description="Each submission is POSTed to this URL, signed so the receiver can verify it."
       >
-        <div className="min-w-64 flex-1 space-y-1">
-          <label htmlFor="url" className="block text-sm font-medium">
-            Endpoint URL
-          </label>
-          <input
-            id="url"
-            name="url"
-            type="url"
-            required
-            placeholder="https://example.com/hooks/formflare"
-            className="w-full rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm dark:border-white/[.18]"
-          />
-        </div>
+        <CreateWebhookForm forms={forms} onDone={() => setOpen(false)} />
+      </Modal>
+    </>
+  );
+}
 
-        <div className="space-y-1">
-          <label htmlFor="formId" className="block text-sm font-medium">
-            Form
-          </label>
-          <select
-            id="formId"
-            name="formId"
-            className="rounded-md border border-black/[.12] bg-transparent px-3 py-2 text-sm dark:border-white/[.18]"
-          >
-            <option value="">All forms</option>
-            {forms.map((form) => (
-              <option key={form.id} value={form.id}>
-                {form.name}
-              </option>
-            ))}
-          </select>
-        </div>
+function CreateWebhookForm({
+  forms,
+  onDone,
+}: {
+  forms: { id: string; name: string }[];
+  onDone: () => void;
+}) {
+  const [state, formAction, pending] = useActionState(createWebhookAction, initialState);
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-60"
-        >
+  if (state.created) {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-medium">Signing secret</p>
+        <p className={hintClass}>
+          Shown once. Store it in your receiver to verify the <code>X-FormFlare-Signature</code>{" "}
+          header.
+        </p>
+        <code className={codeBlockClass}>{state.created.secret}</code>
+        <div className="flex justify-end pt-1">
+          <button type="button" className={btnPrimary} onClick={onDone}>
+            Done
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <label htmlFor="url" className={labelClass}>
+          Endpoint URL
+        </label>
+        <input
+          id="url"
+          name="url"
+          type="url"
+          required
+          placeholder="https://example.com/hooks/formflare"
+          className={inputClass}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="formId" className={labelClass}>
+          Form
+        </label>
+        <select id="formId" name="formId" className={selectClass}>
+          <option value="">All forms</option>
+          {forms.map((form) => (
+            <option key={form.id} value={form.id}>
+              {form.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {state.error ? (
+        <p role="alert" className={errorClass}>
+          {state.error}
+        </p>
+      ) : null}
+
+      <div className="flex justify-end pt-1">
+        <button type="submit" disabled={pending} className={btnPrimary}>
           {pending ? "Adding…" : "Add webhook"}
         </button>
-
-        {state.error && (
-          <p role="alert" className="w-full text-sm text-red-600 dark:text-red-400">
-            {state.error}
-          </p>
-        )}
-      </form>
-
-      {state.created && (
-        <div className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]">
-          <p className="text-sm font-medium">Signing secret</p>
-          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-            Shown once. Store it in your receiver to verify the <code>X-FormFlare-Signature</code>{" "}
-            header.
-          </p>
-          <code className="mt-2 block rounded bg-black/[.06] p-2 font-mono text-xs break-all dark:bg-white/[.08]">
-            {state.created.secret}
-          </code>
-        </div>
-      )}
-    </div>
+      </div>
+    </form>
   );
 }
