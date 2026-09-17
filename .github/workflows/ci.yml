@@ -7,6 +7,11 @@ on:
 
 jobs:
   check:
+    # Deployers get a clone of this repo, workflows included. Our tests and secret
+    # scan are ours, not theirs — running them in someone else's account just
+    # burns their Actions minutes and fails on config they never set up. They can
+    # opt in by deleting this line.
+    if: github.repository == 'SeifElkadyy/FormFlare'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

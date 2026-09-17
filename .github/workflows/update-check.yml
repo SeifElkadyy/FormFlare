@@ -1,0 +1,65 @@
+name: Check for FormFlare updates
+
+# Opens a pull request when a new FormFlare release is published upstream.
+#
+# This runs in *your* copy, not ours — the guard below stops it in the source
+# repository. Nothing is merged automatically: you get a PR, you review it, you
+# decide.
+#
+# Note: GitHub disables scheduled workflows in public repositories after 60 days
+# with no activity. Each update PR counts as activity, but during a quiet stretch
+# the schedule can switch itself off — re-enable it under the Actions tab, or run
+# this workflow by hand from there whenever you want to check.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check:
+    if: github.repository != 'SeifElkadyy/FormFlare'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The updater replays a patch onto your branch tip, so the default
+          # shallow checkout is enough — but the push needs a real ref.
+          fetch-depth: 0
+          # Use the PAT when one is configured, so a patch that touches
+          # .github/workflows/ can actually be pushed. GITHUB_TOKEN cannot do it:
+          # GitHub rejects such a push even with `contents: write`.
+          token: ${{ secrets.UPDATE_PAT || secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Look for a newer release
+        id: update
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPDATE_PAT: ${{ secrets.UPDATE_PAT }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node scripts/check-update.mjs
+
+      - name: Open or update the pull request
+        if: steps.update.outputs.updated == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.UPDATE_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          title="Update FormFlare to ${{ steps.update.outputs.to }}"
+          existing=$(gh pr list --head upstream-update --state open --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" --title "$title" --body-file /tmp/pr-body.md
+            echo "Updated PR #$existing"
+          else
+            gh pr create --head upstream-update --base "${{ github.event.repository.default_branch }}" \
+              --title "$title" --body-file /tmp/pr-body.md
+          fi

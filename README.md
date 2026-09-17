@@ -119,6 +119,56 @@ form with a file field will reject uploads with a clear message until you add on
 The free tier covers 10 GB of storage and 1M writes per month, which is far more than a
 form backend uses — but the card is required regardless.
 
+### How do I get FormFlare updates after deploying?
+
+The Deploy button gives you a **copy** of this repository, not a fork, so GitHub's
+"Sync fork" button does not exist for it. Your copy ships with a workflow that closes
+that gap: `.github/workflows/update-check.yml` checks weekly for a new FormFlare
+release and, when there is one, opens a pull request against your `main`.
+
+Your commits stay the base of that branch, so anything you customised is kept. Nothing
+is merged automatically — review the PR and merge it when you are ready. The PR body
+lists every release you are skipping past, flags new database migrations, and warns you
+when `wrangler.jsonc` is involved.
+
+**Run it whenever you like:** Actions tab → **Check for FormFlare updates** → **Run
+workflow**. You do not have to wait for the weekly run.
+
+**⚠️ The schedule can switch itself off.** GitHub disables scheduled workflows in public
+repositories after 60 days without repository activity. Each update PR counts as
+activity, but after a quiet stretch you may need to re-enable the workflow in the
+Actions tab. Running it by hand works regardless.
+
+#### Files the updater cannot apply
+
+Two kinds of file are left out of the PR and recorded in
+`.formflare/pending-updates.json`:
+
+- **Files you changed that the update also changes.** Merging them is a judgement call,
+  so FormFlare keeps your version and leaves the decision to you.
+- **Workflow files**, unless you add a PAT (see below). GitHub refuses to let a workflow
+  push changes to `.github/workflows/`, so the update is excluded rather than left to
+  fail the whole run.
+
+Anything in that file is listed again in **every** future update PR until you deal with
+it. To clear an entry: apply the change by hand, then delete the entry from
+`.formflare/pending-updates.json`. The PR body includes the exact `git diff` command to
+see what upstream changed.
+
+Note that a file left unresolved will keep conflicting with later updates, since your
+copy drifts further from upstream each release.
+
+#### Letting the updater touch workflow files (optional)
+
+If you want updates to `.github/workflows/` applied automatically, create a
+[fine-grained personal access token](https://github.com/settings/personal-access-tokens)
+scoped to your FormFlare repository with **Contents: read and write**, **Pull requests:
+read and write** and **Workflows: read and write**, then add it as a repository secret
+named `UPDATE_PAT` (Settings → Secrets and variables → Actions).
+
+This is entirely optional. Without it everything else still updates; you just apply
+workflow changes yourself.
+
 ### Is the rate limiting a hard guarantee?
 
 No. The Workers rate-limiting binding is per-location and approximate — a speed bump
