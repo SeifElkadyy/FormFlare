@@ -1,5 +1,26 @@
 # Troubleshooting
 
+## The first build fails with "Could not read package.json"
+
+This hits a new deployment before you have changed anything, and it is not a problem
+with your repository.
+
+Cloudflare creates your repository and starts a build in parallel with importing the
+source into it. The first build can therefore start against an empty
+`Uploading template` commit, before the `source repo import` commit that carries the
+actual code has landed — so the build looks for `package.json` and finds nothing.
+
+**Fix: make any small commit in your new repository.** Editing the README on GitHub and
+committing is enough. That triggers a fresh build against a commit that has the code,
+and it succeeds.
+
+**"Retry build" does not work.** The retry runs against the same empty commit and fails
+the same way, however many times you press it.
+
+Nothing in FormFlare can prevent this — the empty commit is created and built by
+Cloudflare before our code exists in your repository. Once you are past it, subsequent
+builds are unaffected.
+
 ## I'm locked out of my admin account
 
 FormFlare has no "forgot password" email flow — that would require a configured mailer,

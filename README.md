@@ -2,9 +2,18 @@
 
 Forms and waitlists for any website — self-hosted on your own Cloudflare account.
 
-> **Status:** in development. The Deploy to Cloudflare button, screenshots and full docs
-> land in Phase 6. See [FORMFLARE_PLAN.md](./FORMFLARE_PLAN.md) for the roadmap and
-> [docs/DECISIONS.md](./docs/DECISIONS.md) for design decisions.
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/SeifElkadyy/FormFlare)
+
+Deploys on the Cloudflare **free plan**, with **no payment method** and **no secrets** to
+configure. Cloudflare copies this repository into your GitHub account, creates the
+database and queue, and deploys. Then open `/setup` to create your admin account.
+
+> **⚠️ If your first build fails with "Could not read package.json"** — make any small
+> commit in your new repository (editing the README on GitHub is enough) and the build
+> will succeed. **Retrying the build does not work**, because the retry rebuilds the same
+> empty commit. See [Troubleshooting](./docs/troubleshooting.md#the-first-build-fails-with-could-not-read-packagejson).
+
+<!-- TODO(screenshots): dashboard inbox + form settings, before announcing. -->
 
 ## What it does
 
