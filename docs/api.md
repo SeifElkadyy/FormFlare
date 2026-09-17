@@ -51,10 +51,10 @@ Each submission is POSTed to every active webhook for that form.
 | Header                  | Value                                            |
 | ----------------------- | ------------------------------------------------ |
 | `Content-Type`          | `application/json`                               |
-| `X-Formflare-Event`     | `submission.created`                             |
-| `X-Formflare-Delivery`  | Unique per delivery; safe to use for idempotency |
-| `X-Formflare-Timestamp` | Unix seconds                                     |
-| `X-Formflare-Signature` | `sha256=<hex>`                                   |
+| `X-FormFlare-Event`     | `submission.created`                             |
+| `X-FormFlare-Delivery`  | Unique per delivery; safe to use for idempotency |
+| `X-FormFlare-Timestamp` | Unix seconds                                     |
+| `X-FormFlare-Signature` | `sha256=<hex>`                                   |
 
 ### Payload
 
@@ -78,7 +78,7 @@ The HMAC is computed over `"<timestamp>.<raw body>"` — **not the body alone**.
 the timestamp too means a captured request cannot be replayed later with a fresh
 timestamp, because the signature would no longer match.
 
-> **Reject anything older than 5 minutes.** Formflare's own verifier uses a 300-second
+> **Reject anything older than 5 minutes.** FormFlare's own verifier uses a 300-second
 > tolerance: wide enough for clock skew, narrow enough that a captured request expires
 > quickly. Without this check the signature alone permits unlimited replay.
 

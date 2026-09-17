@@ -2,7 +2,7 @@
  * Optional `/setup` gate.
  *
  * The window between deploy and first setup is the one moment a stranger who finds
- * the URL could claim the instance. Formflare cannot *require* a secret without
+ * the URL could claim the instance. FormFlare cannot *require* a secret without
  * breaking the zero-secrets deploy promise (design principle 1), so this is opt-in:
  *
  * - `SETUP_TOKEN` unset (the default) → setup works as before, first-run lock only.

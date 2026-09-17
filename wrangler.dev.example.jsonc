@@ -43,7 +43,7 @@
   "observability": { "enabled": true },
 
   // Off by default: this instance holds throwaway test data but is otherwise a real,
-  // publicly reachable Formflare. Flip to true only while actively verifying something.
+  // publicly reachable FormFlare. Flip to true only while actively verifying something.
   "workers_dev": false,
 
   "d1_databases": [
@@ -89,7 +89,7 @@
   ],
 
   "vars": {
-    "APP_NAME": "Formflare (dev)"
+    "APP_NAME": "FormFlare (dev)"
   },
 
   "triggers": { "crons": ["*/15 * * * *", "0 3 * * *"] }

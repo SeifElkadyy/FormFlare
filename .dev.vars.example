@@ -1,4 +1,4 @@
-# Formflare needs no secrets to deploy.
+# FormFlare needs no secrets to deploy.
 #
 # Every UNCOMMENTED line in this file becomes a required secret prompt in the
 # "Deploy to Cloudflare" flow, and the example value ships to production.

@@ -2,7 +2,7 @@
 /**
  * Reset a user's password from the command line.
  *
- * The only recovery path for a locked-out owner: Formflare has no "forgot password"
+ * The only recovery path for a locked-out owner: FormFlare has no "forgot password"
  * email flow, because that would require a configured mailer, and email is optional
  * at runtime by design.
  *

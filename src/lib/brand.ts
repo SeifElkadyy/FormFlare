@@ -4,6 +4,6 @@
  * `wrangler.jsonc` (name + resource names) and `package.json`.
  */
 export const BRAND = {
-  name: "Formflare",
+  name: "FormFlare",
   tagline: "Forms and waitlists for any website — self-hosted on your own Cloudflare account.",
 } as const;

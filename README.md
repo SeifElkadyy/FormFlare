@@ -1,4 +1,4 @@
-# Formflare
+# FormFlare
 
 Forms and waitlists for any website — self-hosted on your own Cloudflare account.
 
@@ -55,7 +55,7 @@ npm run preview
 ### I forgot my admin password. How do I get back in?
 
 There is no password reset email — that would require a configured mailer, and email is
-optional in Formflare by design. Reset it from the command line instead:
+optional in FormFlare by design. Reset it from the command line instead:
 
 ```bash
 npm run reset-password -- --email you@example.com --remote
@@ -67,7 +67,7 @@ database. You need Wrangler logged in to the account that owns the database.
 
 ### Do I need any secrets or API tokens to deploy?
 
-No. Formflare deploys with zero required secrets. The session key is generated during
+No. FormFlare deploys with zero required secrets. The session key is generated during
 `/setup`, and Turnstile keys are entered per form in the dashboard.
 
 There is one **optional** secret, `SETUP_TOKEN`. If you set it, `/setup` additionally

@@ -30,7 +30,7 @@ export default async function SetupPage({
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center px-6 py-16">
-      <h1 className="text-2xl font-semibold tracking-tight">Set up Formflare</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Set up FormFlare</h1>
       <p className="mt-2 text-zinc-600 dark:text-zinc-400">
         This runs once. Afterwards this page is disabled.
       </p>

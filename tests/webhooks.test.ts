@@ -223,11 +223,11 @@ describe("deliverWebhook", () => {
     expect(stub.calls).toHaveLength(1);
 
     const request = stub.calls[0];
-    expect(request.headers.get("X-Formflare-Event")).toBe("submission.created");
-    expect(request.headers.get("X-Formflare-Delivery")).toBe("del-1");
+    expect(request.headers.get("X-FormFlare-Event")).toBe("submission.created");
+    expect(request.headers.get("X-FormFlare-Delivery")).toBe("del-1");
 
-    const timestamp = Number(request.headers.get("X-Formflare-Timestamp"));
-    const signature = request.headers.get("X-Formflare-Signature")!;
+    const timestamp = Number(request.headers.get("X-FormFlare-Timestamp"));
+    const signature = request.headers.get("X-FormFlare-Signature")!;
     const body = await request.text();
 
     // The receiver's verification must succeed against exactly what was sent.

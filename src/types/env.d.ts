@@ -2,7 +2,7 @@
  * Optional runtime secrets.
  *
  * These are NOT declared in `wrangler.jsonc`, so `wrangler types` does not generate
- * them. They are optional by design: Formflare must deploy with zero required
+ * them. They are optional by design: FormFlare must deploy with zero required
  * secrets (design principle 1), so every entry here has to be `?` and every code
  * path must work when it is undefined.
  */

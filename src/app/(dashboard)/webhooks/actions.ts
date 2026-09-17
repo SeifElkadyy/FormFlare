@@ -98,7 +98,7 @@ export async function testWebhookAction(
       createdAt: Date.now(),
       waitlistPosition: null,
     } as never,
-    { email: "test@example.com", message: "This is a test delivery from Formflare." },
+    { email: "test@example.com", message: "This is a test delivery from FormFlare." },
   );
 
   const result = await deliverWebhook(hook.url, secret, payload, `test_${ulid()}`);

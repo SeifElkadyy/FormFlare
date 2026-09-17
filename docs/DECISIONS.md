@@ -459,7 +459,7 @@ must contain no account-specific IDs and no dev-only names. A stray `database_id
 would point a stranger's install at this account's database.
 
 The split also fixed a leak that was already committed: with the env block in place,
-`wrangler types` generated `APP_NAME: "Formflare (dev)" | "Formflare"` and an entire
+`wrangler types` generated `APP_NAME: "FormFlare (dev)" | "FormFlare"` and an entire
 `DevEnv` interface into the public `cloudflare-env.d.ts`. `cf-typegen` reads only
 `wrangler.jsonc`, so the regenerated types are now production-only and the CI drift check
 passes against them.
@@ -683,7 +683,7 @@ something outside this codebase.
 
 ### The dev instance is no longer publicly reachable
 
-`"workers_dev": false` in `wrangler.dev.jsonc`. It is a real, fully functional Formflare
+`"workers_dev": false` in `wrangler.dev.jsonc`. It is a real, fully functional FormFlare
 that happened to be on a guessable URL; there is no reason to leave it exposed between
 verification runs. Confirmed: `/` and `/f/:id` both return 404 at the edge. The Worker,
 its data and its cron triggers are untouched — flip the flag and redeploy to re-enable.
@@ -710,7 +710,7 @@ Cloudflare [changed Worker size limits on 2026-09-04](https://developers.cloudfl
 > 10 MB (Paid). That limit has been removed." The `gzip` figure Wrangler prints is now
 > "shown for reference but is no longer a limit."
 
-### Where Formflare sits
+### Where FormFlare sits
 
 From `wrangler deploy --dry-run`:
 

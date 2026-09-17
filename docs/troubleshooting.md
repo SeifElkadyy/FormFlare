@@ -2,7 +2,7 @@
 
 ## I'm locked out of my admin account
 
-Formflare has no "forgot password" email flow — that would require a configured mailer,
+FormFlare has no "forgot password" email flow — that would require a configured mailer,
 and email is optional by design. Recovery is a command line reset, which anyone with
 access to the Cloudflare account can run:
 

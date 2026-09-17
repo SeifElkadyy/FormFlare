@@ -5,7 +5,7 @@ import { handleSubmission } from "../src/lib/submissions/handle";
 
 describe("phase 0 scaffold", () => {
   it("exposes the brand name from a single constant", () => {
-    expect(BRAND.name).toBe("Formflare");
+    expect(BRAND.name).toBe("FormFlare");
   });
 
   it("binds D1, R2 and the job queue", () => {

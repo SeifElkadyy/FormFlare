@@ -59,7 +59,7 @@
   ],
 
   "vars": {
-    "APP_NAME": "Formflare"
+    "APP_NAME": "FormFlare"
   },
 
   // Every 15 minutes: re-enqueue work stranded by an evicted Worker or a lost message.

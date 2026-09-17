@@ -1,12 +1,12 @@
-# Formflare — Build Plan & Agent Execution Guide
+# FormFlare — Build Plan & Agent Execution Guide
 
-> **What this file is:** the complete product spec, architecture, reference config, and step-by-step execution plan for building **Formflare**, an open-source, self-hosted form and waitlist backend that deploys to a user's own Cloudflare account with one **Deploy to Cloudflare** button.
+> **What this file is:** the complete product spec, architecture, reference config, and step-by-step execution plan for building **FormFlare**, an open-source, self-hosted form and waitlist backend that deploys to a user's own Cloudflare account with one **Deploy to Cloudflare** button.
 >
 > **Who it's for:** an AI coding agent and the project maintainer.
 >
 > **How to use it (agent):** read the whole file once. Then execute **Section 17 (Execution phases)** in order. Do not start a phase until the previous phase's acceptance criteria pass. When something in this file conflicts with current official docs, **the official docs win** — update this file and note the change in `docs/DECISIONS.md`.
 
-> **Name:** "Formflare" is a working name. Keep the name in one constant (`src/lib/brand.ts`) and in `wrangler.jsonc` / `package.json` so it can be renamed in one pass.
+> **Name:** "FormFlare" is a working name. Keep the name in one constant (`src/lib/brand.ts`) and in `wrangler.jsonc` / `package.json` so it can be renamed in one pass.
 
 ---
 
@@ -110,10 +110,10 @@ The setup page's "Select D1 database → new", "Select R2 bucket → new" and "S
 
 These come from real problems seen in one-click Cloudflare deployments. They are hard requirements.
 
-1. **Zero required secrets.** Formflare must deploy and work with no manual secret. Requiring a hand-created scoped API token is the step that loses most one-click deployers; Formflare does not need the Cloudflare API at all, because it never edits DNS or routing.
+1. **Zero required secrets.** FormFlare must deploy and work with no manual secret. Requiring a hand-created scoped API token is the step that loses most one-click deployers; FormFlare does not need the Cloudflare API at all, because it never edits DNS or routing.
    - Session signing key: generated at first-run setup and stored in D1 (`settings` table).
    - Turnstile keys: entered per form in the dashboard and stored in D1 (not env vars), which also avoids the `NEXT_PUBLIC_*` build-time variable problem.
-2. **No hard dependency on the Worker name.** A deployer can rename the Worker on the setup page, so anything that hard-codes the name — a self-referencing service binding, or a name held in an env var — breaks the install. Formflare must work under any Worker name. Do not add a service binding to itself.
+2. **No hard dependency on the Worker name.** A deployer can rename the Worker on the setup page, so anything that hard-codes the name — a self-referencing service binding, or a name held in an env var — breaks the install. FormFlare must work under any Worker name. Do not add a service binding to itself.
 3. **Setup wizard with health checks** at `/setup` that verifies each binding (DB, BUCKET, QUEUE, EMAIL optional) and shows clear fixes.
 4. **First-run lock.** After the admin is created, `/setup` is disabled and **public sign-up is off by default**. A self-hosted instance that leaves "Create account" open lets a stranger who finds the URL join someone else's dashboard.
 5. **Graceful degradation.** If Email Sending isn't enabled or the user is on the free plan, the app still works; the UI explains what's unavailable and why.
@@ -174,7 +174,7 @@ These come from real problems seen in one-click Cloudflare deployments. They are
 - Per-form analytics (views, submissions, conversion) without cookies.
 - Tags, notes, and a lead status pipeline.
 - Scheduled D1 → R2 backups (Cron) and GDPR delete-by-email.
-- TypeScript SDK and `<FormflareForm />` React component on npm.
+- TypeScript SDK and `<FormFlareForm />` React component on npm.
 - Team members and roles; view-only client logins.
 
 ### Later
@@ -407,7 +407,7 @@ Reference config. Verify every key against current Wrangler docs at build time.
   ],
 
   "vars": {
-    "APP_NAME": "Formflare",
+    "APP_NAME": "FormFlare",
   },
 
   "triggers": { "crons": ["0 3 * * *"] }, // daily cleanup (expired sessions, old rate data); backups in v2
@@ -468,10 +468,10 @@ Notes:
 
 ### `.dev.vars.example`
 
-Every uncommented line becomes a **required** deploy prompt. Formflare needs none, so everything is commented:
+Every uncommented line becomes a **required** deploy prompt. FormFlare needs none, so everything is commented:
 
 ```ini
-# Formflare needs no secrets to deploy.
+# FormFlare needs no secrets to deploy.
 # Session keys are generated during /setup and stored in D1.
 # Turnstile keys are configured per form in the dashboard.
 #
@@ -835,7 +835,7 @@ type Job =
 }
 ```
 
-- Headers: `Content-Type: application/json`, `X-Formflare-Event`, `X-Formflare-Delivery`, `X-Formflare-Timestamp`, `X-Formflare-Signature: sha256=<hex HMAC of "timestamp.body">`.
+- Headers: `Content-Type: application/json`, `X-FormFlare-Event`, `X-FormFlare-Delivery`, `X-FormFlare-Timestamp`, `X-FormFlare-Signature: sha256=<hex HMAC of "timestamp.body">`.
 - Timeout 10s. Success = 2xx. Retry otherwise.
 - Block private/internal targets (the `global_fetch_strictly_public` flag helps; also validate the URL scheme is `https:`).
 - Document signature verification in `docs/api.md` with a Node example.
@@ -1079,7 +1079,7 @@ Acceptance
 ### `CLAUDE.md` (create in the repo root)
 
 ```md
-# Formflare — agent rules
+# FormFlare — agent rules
 
 - Source of truth: FORMFLARE_PLAN.md. Log deviations in docs/DECISIONS.md.
 - Stack: Next.js App Router + @opennextjs/cloudflare, D1 + Drizzle, R2, Queues, Email Sending.
@@ -1127,13 +1127,13 @@ Acceptance
 ## 20. README template
 
 ```md
-# Formflare
+# FormFlare
 
 Forms and waitlists for any website — self-hosted on your own Cloudflare account.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/SeifElkadyy/FormFlare)
 
-![Formflare dashboard](./public/screenshot.png)
+![FormFlare dashboard](./public/screenshot.png)
 
 ## What you can do
 
@@ -1147,7 +1147,7 @@ Forms and waitlists for any website — self-hosted on your own Cloudflare accou
 
 ## How it works
 
-Formflare runs as a single Worker in your Cloudflare account. Submissions are saved to D1,
+FormFlare runs as a single Worker in your Cloudflare account. Submissions are saved to D1,
 files to R2, and emails/webhooks are sent in the background through Cloudflare Queues.
 
 ## Deploy (3 steps)

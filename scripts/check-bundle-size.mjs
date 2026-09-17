@@ -3,7 +3,7 @@
  * Fail the build if the Worker bundle grows unreasonably.
  *
  * Cloudflare's limit is **64 MiB uncompressed**, on every plan, since 2026-09-04 — the
- * old 3 MB (Free) / 10 MB (Paid) *compressed* limits were removed. Formflare is nowhere
+ * old 3 MB (Free) / 10 MB (Paid) *compressed* limits were removed. FormFlare is nowhere
  * near that, so this is not a deploy gate; it is a regression alarm. A bundle that
  * suddenly doubles usually means a heavy dependency was pulled into the Worker by
  * accident, which costs startup time (a hard 1-second limit) long before it costs size.

@@ -65,7 +65,7 @@ export function CreateWebhookForm({ forms }: { forms: { id: string; name: string
         <div className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]">
           <p className="text-sm font-medium">Signing secret</p>
           <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-            Shown once. Store it in your receiver to verify the <code>X-Formflare-Signature</code>{" "}
+            Shown once. Store it in your receiver to verify the <code>X-FormFlare-Signature</code>{" "}
             header.
           </p>
           <code className="mt-2 block rounded bg-black/[.06] p-2 font-mono text-xs break-all dark:bg-white/[.08]">

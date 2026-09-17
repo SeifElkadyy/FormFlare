@@ -10,7 +10,7 @@ import { parseFields } from "@/lib/submissions/fields";
 export const dynamic = "force-dynamic";
 
 /**
- * Live preview of a form, rendered by Formflare itself.
+ * Live preview of a form, rendered by FormFlare itself.
  *
  * This is the first page we serve that embeds the Turnstile widget, which makes it the
  * thing that actually exercises the `challenges.cloudflare.com` entries in the CSP. The

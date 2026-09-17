@@ -118,7 +118,7 @@ export function FormSettings({ form }: Props) {
           */}
           <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
             ⚠️ Turn on Turnstile before enabling this. Auto-replies are sent to whatever address was
-            submitted, so without a bot check your domain can be used to mail strangers. Formflare
+            submitted, so without a bot check your domain can be used to mail strangers. FormFlare
             also limits one auto-reply per address per 24 hours.
           </p>
 
