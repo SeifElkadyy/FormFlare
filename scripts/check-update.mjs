@@ -121,9 +121,19 @@ if (compareVersions(latest.tag, `v${localVersion}`) <= 0) {
   console.log(`Up to date (local v${localVersion}, latest ${latest.tag}).`);
   if (pending.length > 0) {
     // Being current does not mean being finished — skipped files stay skipped.
-    console.log(`\n${pending.length} file(s) still need manual attention:`);
-    for (const item of pending) console.log(`  - ${item.file} (${item.from} → ${item.to}): ${item.reason}`);
-    process.exit(2);
+    // This is a reminder, not a failure: the run did everything it could, so it
+    // exits 0 rather than showing a red cross against a working repository.
+    const note = [
+      `### ${pending.length} file(s) still need your attention`,
+      "",
+      ...pending.map((item) => `- \`${item.file}\` (${item.from} → ${item.to}) — ${item.reason}`),
+      "",
+      `Apply each by hand, then delete its entry from \`${PENDING_FILE}\`.`,
+    ].join("\n");
+    console.log(`\n${note}`);
+    if (process.env.GITHUB_STEP_SUMMARY) {
+      writeFileSync(process.env.GITHUB_STEP_SUMMARY, `${note}\n`, { flag: "a" });
+    }
   }
   process.exit(0);
 }
@@ -275,6 +285,21 @@ if (dryRun) {
 if (nextPending.length > 0 || existsSync(PENDING_FILE)) {
   writePending(nextPending);
   git(["add", PENDING_FILE]);
+}
+
+// The version in package.json is how the next run works out where this copy
+// stands, so it must end up at the new release no matter what the patch did.
+// It would otherwise be left behind whenever package.json conflicted, or when a
+// release changed no other line of it — and the same update would then be
+// offered again forever.
+const packageJson = readFileSync("package.json", "utf8");
+const bumped = packageJson.replace(
+  /("version"\s*:\s*)"[^"]*"/,
+  `$1"${toTag.replace(/^v/, "")}"`,
+);
+if (bumped !== packageJson) {
+  writeFileSync("package.json", bumped);
+  git(["add", "package.json"]);
 }
 
 git(["commit", "--quiet", "-m", `chore: update FormFlare to ${toTag}`]);
