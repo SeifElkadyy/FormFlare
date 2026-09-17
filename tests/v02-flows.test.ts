@@ -12,6 +12,7 @@ import { resolveMailer } from "../src/lib/platform/resolve-mailer";
 import { handleSubmission } from "../src/lib/submissions/handle";
 import { clearFormCache } from "../src/lib/submissions/form-cache";
 import { getUpdateStatus } from "../src/lib/update/check";
+import { APP_VERSION } from "../src/lib/version";
 import { confirmSignup } from "../src/lib/waitlist/complete";
 import { signConfirmToken } from "../src/lib/waitlist/confirm";
 import { publicCount, waitlistRank } from "../src/lib/waitlist/rank";
@@ -56,20 +57,22 @@ afterEach(() => {
 
 describe("update check", () => {
   it("ignores pre-release tags and caches a newer stable release", async () => {
+    const [major, minor, patch] = APP_VERSION.split(".").map(Number);
+    const newer = `v${major}.${minor}.${patch + 1}`;
     const fetcher = vi.fn(async () =>
-      new Response(JSON.stringify({ tag_name: "v0.2.0", html_url: "https://example/rel", prerelease: false }), {
+      new Response(JSON.stringify({ tag_name: newer, html_url: "https://example/rel", prerelease: false }), {
         status: 200,
         headers: { "content-type": "application/json" },
       }),
     ) as unknown as typeof fetch;
 
     const status = await getUpdateStatus(db, { force: true, fetcher, now: 1_000 });
-    expect(status.latest).toBe("v0.2.0");
+    expect(status.latest).toBe(newer);
     expect(status.newer).toBe(true);
     expect(fetcher).toHaveBeenCalledOnce();
 
     const cached = await getUpdateStatus(db, { fetcher, now: 2_000 });
-    expect(cached.latest).toBe("v0.2.0");
+    expect(cached.latest).toBe(newer);
     expect(fetcher).toHaveBeenCalledOnce();
   });
 });
