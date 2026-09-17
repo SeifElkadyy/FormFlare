@@ -57,9 +57,9 @@ jobs:
           title="Update FormFlare to ${{ steps.update.outputs.to }}"
           existing=$(gh pr list --head upstream-update --state open --json number --jq '.[0].number')
           if [ -n "$existing" ]; then
-            gh pr edit "$existing" --title "$title" --body-file /tmp/pr-body.md
+            gh pr edit "$existing" --title "$title" --body-file "${TMPDIR:-/tmp}/pr-body.md"
             echo "Updated PR #$existing"
           else
             gh pr create --head upstream-update --base "${{ github.event.repository.default_branch }}" \
-              --title "$title" --body-file /tmp/pr-body.md
+              --title "$title" --body-file "${TMPDIR:-/tmp}/pr-body.md"
           fi

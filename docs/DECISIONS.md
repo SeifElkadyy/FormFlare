@@ -1041,3 +1041,68 @@ Two fixes: `typecheck` now passes `--incremental false` so results are determini
       `.dev.vars.example` (verify in Phase 6; if it prompts, delete the file and document
       local dev vars in `docs/deployment.md` instead).
 - [ ] Re-check pricing claims before release.
+
+## 2026-09-17 — Update path for deployed copies
+
+The Deploy button **clones**, so a deployer's repository has no upstream link, no
+"Sync fork", and no way to receive fixes. Everything below was verified against a real
+deployment (`formflare-test2`) rather than reasoned about.
+
+### Histories are unrelated
+
+`git merge-base` between the clone's `main` and ours returns **nothing**. Root commits:
+clone `6c42fcfc` ("source repo import", authored by `cloudflare[bot]`), ours `ac3daa44`.
+
+So `git merge` has no base to work from. The obvious design — push upstream's release
+tag to a branch and open a PR — is **actively destructive** here: with no merge base
+GitHub diffs the trees directly, so every deployer-only file shows as a deletion and
+every deployer edit as a revert. Tested, and it proposed deleting a file the deployer
+had added.
+
+Instead `scripts/check-update.mjs` fetches the two release tags by URL, diffs them, and
+replays that patch onto the deployer's own `main` with `git apply --3way`. Their commits
+stay the base, so their customisations survive. This works whether or not the histories
+are related, which also makes it robust if Cloudflare ever changes how it clones.
+
+Details that cost real debugging:
+
+- **`git apply` is atomic.** One file that will not apply discards every other file's
+  changes. Applied per file instead, so one conflict costs one file.
+- **Binary patches must not be trimmed.** A binary patch ends with a blank line;
+  stripping it produces `error: corrupt binary patch`. Patch text bypasses the trimming
+  `git()` helper via `gitRaw()`. Covered by a test with a real binary file.
+- **The version must be set explicitly** in the update commit. Relying on the patch to
+  carry `package.json` fails when a release changes no other line of it, or when that
+  file conflicts — and the same update is then offered forever.
+- **Pre-release tags are ignored, not ordered.** `Number("0-beta")` is `NaN` and every
+  `NaN` comparison is false, so `v0.2.0-beta.1` compared as *equal* to `v0.2.0`. We tag
+  stable releases only; see AGENTS.md.
+
+### Cloudflare strips `.github/` when cloning
+
+The clone contains **no `.github` files at all**: 146 files versus our 148, missing
+exactly `ci.yml` and `update-check.yml`. Both existed upstream at clone time (the clone
+was created between commits `3ffdcc7` and `752d971`, and `ci.yml` had been there since
+the initial commit), so this is stripping, not a version lag. Undocumented by Cloudflare;
+most likely because its GitHub App lacks the `workflows` permission — the same
+restriction that stops `GITHUB_TOKEN` pushing workflow changes (verified separately: the
+remote rejects such a push even with `contents: write`).
+
+Consequence: **the update workflow never reaches a deployer**. `scripts/check-update.mjs`
+*is* copied, so the documented path is to run it locally; copying the workflow in is
+optional and needs the `workflow` permission. An in-app "update available" banner is
+planned for v0.2.0 so deployers who never read the README still find out.
+
+Side effect, and a welcome one: our CI does not run in deployers' repositories either,
+which is what the `if: github.repository == 'SeifElkadyy/FormFlare'` guard on `ci.yml`
+was for. The guard stays, because a deployer who copies workflows in should still not
+run our test suite and secret scan by default.
+
+### First build fails with "Could not read package.json"
+
+Cloudflare creates the repository and starts a build in parallel with importing the
+source, so the first build can run against an empty commit. Confirmed that the
+`source repo import` commit *does* contain `package.json` (2535 bytes, 146 files), so
+the build that failed ran before it landed. **Retrying does not help** — the retry
+rebuilds the same empty commit; pushing any new commit does. Nothing in this repository
+can prevent it, so it is documented in the README and `docs/troubleshooting.md`.

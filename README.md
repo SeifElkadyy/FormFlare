@@ -131,52 +131,87 @@ form backend uses — but the card is required regardless.
 ### How do I get FormFlare updates after deploying?
 
 The Deploy button gives you a **copy** of this repository, not a fork, so GitHub's
-"Sync fork" button does not exist for it. Your copy ships with a workflow that closes
-that gap: `.github/workflows/update-check.yml` checks weekly for a new FormFlare
-release and, when there is one, opens a pull request against your `main`.
+"Sync fork" button does not exist for it. FormFlare ships a script that closes the gap:
+it works out which release you are on, fetches the newer one, and replays the changes
+onto your own `main`.
 
-Your commits stay the base of that branch, so anything you customised is kept. Nothing
-is merged automatically — review the PR and merge it when you are ready. The PR body
-lists every release you are skipping past, flags new database migrations, and warns you
-when `wrangler.jsonc` is involved.
+Your commits stay the base, so anything you customised is kept, and nothing is applied
+without you merging it.
 
-**Run it whenever you like:** Actions tab → **Check for FormFlare updates** → **Run
-workflow**. You do not have to wait for the weekly run.
+> **⚠️ Cloudflare does not copy `.github/` when it clones.** We ship
+> `.github/workflows/update-check.yml`, but it will **not** be in your repository —
+> Cloudflare strips the whole directory, so there is no automatic weekly check unless
+> you add one yourself (option B below). `scripts/check-update.mjs` *is* copied, so
+> option A works out of the box.
+
+#### A. Check for updates yourself (works immediately)
+
+From the root of your copy, on a clean working tree:
+
+```bash
+git pull
+node scripts/check-update.mjs --dry-run
+```
+
+`--dry-run` reports what would change without touching your repository. To prepare the
+update for real, drop the flag:
+
+```bash
+node scripts/check-update.mjs
+```
+
+That commits the changes to a local `upstream-update` branch and stops — nothing is
+pushed. Review and apply it:
+
+```bash
+git show upstream-update
+git checkout main && git merge upstream-update
+```
+
+Then push, and Workers Builds redeploys. Add `--push` instead if you would rather push
+the branch and open a pull request on GitHub. `--help` lists the flags.
+
+The output lists every release you are skipping past, flags new database migrations, and
+warns you when `wrangler.jsonc` is involved.
+
+#### B. Automate it (optional)
+
+To get the weekly check and an automatic pull request, copy
+[`.github/workflows/update-check.yml`](https://github.com/SeifElkadyy/FormFlare/blob/main/.github/workflows/update-check.yml)
+from this repository into your own at the same path, and commit it.
+
+Adding that file needs the `workflow` permission on whatever you commit it with — the
+GitHub web editor is easiest, since it uses your own account. Once it is in place the
+check runs weekly, and on demand from the Actions tab → **Check for FormFlare updates**
+→ **Run workflow**.
 
 **⚠️ The schedule can switch itself off.** GitHub disables scheduled workflows in public
 repositories after 60 days without repository activity. Each update PR counts as
 activity, but after a quiet stretch you may need to re-enable the workflow in the
-Actions tab. Running it by hand works regardless.
+Actions tab. Running the script by hand works regardless.
 
 #### Files the updater cannot apply
 
-Two kinds of file are left out of the PR and recorded in
-`.formflare/pending-updates.json`:
+Files you changed that the update also changes are left out and recorded in
+`.formflare/pending-updates.json`. Merging them is a judgement call, so FormFlare keeps
+your version and leaves the decision to you.
 
-- **Files you changed that the update also changes.** Merging them is a judgement call,
-  so FormFlare keeps your version and leaves the decision to you.
-- **Workflow files**, unless you add a PAT (see below). GitHub refuses to let a workflow
-  push changes to `.github/workflows/`, so the update is excluded rather than left to
-  fail the whole run.
-
-Anything in that file is listed again in **every** future update PR until you deal with
+Anything in that file is reported again on **every** later update until you deal with
 it. To clear an entry: apply the change by hand, then delete the entry from
-`.formflare/pending-updates.json`. The PR body includes the exact `git diff` command to
+`.formflare/pending-updates.json`. The output includes the exact `git diff` command to
 see what upstream changed.
 
 Note that a file left unresolved will keep conflicting with later updates, since your
 copy drifts further from upstream each release.
 
-#### Letting the updater touch workflow files (optional)
-
-If you want updates to `.github/workflows/` applied automatically, create a
+If you took option B, one more kind of file is skipped: **workflow files**. GitHub
+refuses to let a workflow push changes to `.github/workflows/`, so those updates are
+excluded rather than failing the whole run. To apply them automatically, create a
 [fine-grained personal access token](https://github.com/settings/personal-access-tokens)
 scoped to your FormFlare repository with **Contents: read and write**, **Pull requests:
 read and write** and **Workflows: read and write**, then add it as a repository secret
-named `UPDATE_PAT` (Settings → Secrets and variables → Actions).
-
-This is entirely optional. Without it everything else still updates; you just apply
-workflow changes yourself.
+named `UPDATE_PAT` (Settings → Secrets and variables → Actions). Running the script
+locally has no such restriction.
 
 ### Is the rate limiting a hard guarantee?
 

@@ -17,8 +17,9 @@
 // script: `node scripts/check-update.mjs --dry-run` works locally too.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 
 const UPSTREAM = process.env.FORMFLARE_UPSTREAM ?? "https://github.com/SeifElkadyy/FormFlare.git";
 const UPSTREAM_REPO = process.env.FORMFLARE_UPSTREAM_REPO ?? "SeifElkadyy/FormFlare";
@@ -26,6 +27,24 @@ const PENDING_FILE = ".formflare/pending-updates.json";
 const BRANCH = "upstream-update";
 
 const dryRun = process.argv.includes("--dry-run");
+
+if (process.argv.includes("--help") || process.argv.includes("-h")) {
+  console.log(
+    [
+      "Check for a newer FormFlare release and prepare the update.",
+      "",
+      "  node scripts/check-update.mjs [--dry-run] [--push]",
+      "",
+      "  --dry-run  Show what would change without touching your repository.",
+      "  --push     Also push the update branch to origin (implied in GitHub Actions).",
+      "",
+      "With no flags it commits the update to a local 'upstream-update' branch and",
+      "tells you how to review and merge it. Your own commits stay the base, so",
+      "anything you customised is kept. Run it from the root of your FormFlare copy.",
+    ].join("\n"),
+  );
+  process.exit(0);
+}
 
 function git(args, opts = {}) {
   return execFileSync("git", args, { encoding: "utf8", ...opts }).trim();
@@ -192,6 +211,29 @@ if (changedFiles.length === 0) {
   process.exit(0);
 }
 
+// Refuse to touch a working copy that has uncommitted work in it: the update
+// branches off HEAD, so anything uncommitted would either be swept into the
+// update commit or left stranded on the new branch.
+const dirty = git(["status", "--porcelain"]);
+if (dirty) {
+  console.error(
+    "You have uncommitted changes. Commit or stash them first — the update needs a clean\n" +
+      "working copy so it can branch from your current commit.\n\n" +
+      dirty,
+  );
+  process.exit(1);
+}
+
+// A dry run must not disturb the working copy at all, so do the work in a throwaway
+// clone and report from there. Without this, --dry-run leaves the caller on a new
+// branch with staged changes, which is precisely what someone asking to preview
+// does not want.
+if (dryRun) {
+  const scratch = mkdtempSync(join(tmpdir(), "formflare-update-"));
+  git(["clone", "--quiet", "--shared", ".", scratch]);
+  process.chdir(scratch);
+}
+
 const base = git(["rev-parse", "HEAD"]);
 git(["checkout", "--quiet", "-B", BRANCH, base]);
 
@@ -305,7 +347,9 @@ const body = [
   "",
   "---",
   "",
-  `Opened automatically by \`.github/workflows/update-check.yml\`. Close it to skip ${toTag}; the next release opens a new one.`,
+  process.env.GITHUB_ACTIONS
+    ? `Opened automatically by \`.github/workflows/update-check.yml\`. Close it to skip ${toTag}; the next release opens a new one.`
+    : `Prepared by \`scripts/check-update.mjs\`. Close it to skip ${toTag}; running the check again after the next release prepares a new one.`,
 ].join("\n");
 
 if (dryRun) {
@@ -335,8 +379,34 @@ if (bumped !== packageJson) {
 }
 
 git(["commit", "--quiet", "-m", `chore: update FormFlare to ${toTag}`]);
-git(["push", "--quiet", "--force", "origin", `${BRANCH}:${BRANCH}`]);
 
-writeFileSync(process.env.GITHUB_OUTPUT ?? "/dev/null", `updated=true\nfrom=${fromTag}\nto=${toTag}\n`, { flag: "a" });
-writeFileSync("/tmp/pr-body.md", body);
-console.log(`Pushed ${BRANCH}: ${staged.length} file(s) updated, ${excluded.length} skipped.`);
+// In Actions the whole point is to push and open a PR. On someone's own machine
+// it is not: pushing a branch to their GitHub repository is theirs to decide, so
+// it happens only when asked for.
+const shouldPush = Boolean(process.env.GITHUB_ACTIONS) || process.argv.includes("--push");
+if (shouldPush) {
+  git(["push", "--quiet", "--force", "origin", `${BRANCH}:${BRANCH}`]);
+}
+
+if (process.env.GITHUB_OUTPUT) {
+  writeFileSync(process.env.GITHUB_OUTPUT, `updated=true\nfrom=${fromTag}\nto=${toTag}\n`, { flag: "a" });
+}
+writeFileSync(join(tmpdir(), "pr-body.md"), body);
+
+console.log(
+  `\n${staged.length} file(s) updated, ${excluded.length} skipped, committed on '${BRANCH}'.`,
+);
+console.log(
+  shouldPush
+    ? `Pushed '${BRANCH}' to origin.`
+    : [
+        "",
+        "Nothing has been pushed. To review and apply it:",
+        "",
+        `  git show ${BRANCH}          # see exactly what changed`,
+        `  git checkout main && git merge ${BRANCH}`,
+        "",
+        `Or push it and open a pull request instead: re-run with --push, or`,
+        `  git push origin ${BRANCH}`,
+      ].join("\n"),
+);
