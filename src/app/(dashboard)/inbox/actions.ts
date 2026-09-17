@@ -23,6 +23,7 @@ export async function setStatusAction(formData: FormData): Promise<void> {
 
   await audit(db, user.id, "submission.status", { submissionId: id, status });
   revalidatePath("/inbox");
+  revalidatePath("/home");
 }
 
 export async function deleteSubmissionAction(formData: FormData): Promise<void> {
@@ -35,6 +36,7 @@ export async function deleteSubmissionAction(formData: FormData): Promise<void> 
 
   await audit(db, user.id, "submission.delete", { submissionId: id });
   revalidatePath("/inbox");
+  revalidatePath("/home");
 }
 
 /** Bulk status change from the inbox. */
@@ -53,4 +55,5 @@ export async function bulkStatusAction(formData: FormData): Promise<void> {
 
   await audit(db, user.id, "submission.bulk_status", { count: ids.length, status });
   revalidatePath("/inbox");
+  revalidatePath("/home");
 }

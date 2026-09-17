@@ -66,13 +66,20 @@ const nextConfig: NextConfig = {
     return [
       {
         /*
-         * Everything except the public submission endpoint. `/f/:id` is handled in
-         * worker.ts before Next sees it, and it is meant to be called cross-origin from
-         * anyone's site — applying a restrictive CSP there would be meaningless, since
-         * the response is JSON or a redirect rather than a document.
+         * Everything except the public submission endpoint and hosted form pages.
+         * `/f/:id` is handled in worker.ts before Next sees it.
+         * `/p/:slug` is meant to be iframed onto other sites via the embed widget.
          */
-        source: "/((?!f/).*)",
+        source: "/((?!f/|p/).*)",
         headers: SECURITY_HEADERS,
+      },
+      {
+        source: "/p/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: CSP.replace("frame-ancestors 'none'", "frame-ancestors *") },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
       },
     ];
   },

@@ -29,6 +29,13 @@
       "when": 1789627896486,
       "tag": "0005_backfill_fanned_out",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1789680491862,
+      "tag": "0006_windy_norrin_radd",
+      "breakpoints": true
     }
   ]
 }

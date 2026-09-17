@@ -12,7 +12,7 @@ import { token, ulid } from "@/lib/ids";
 import { buildPayload, deliverWebhook } from "@/lib/webhooks/deliver";
 import { validateWebhookUrl } from "@/lib/webhooks/sign";
 
-export type WebhookState = { error?: string; created?: { secret: string } };
+export type WebhookState = { error?: string; created?: { secret: string; preset: string } };
 
 export async function createWebhookAction(
   _prev: WebhookState,
@@ -28,21 +28,27 @@ export async function createWebhookAction(
   const formId = String(formData.get("formId") ?? "");
   const secret = `whsec_${token(24)}`;
   const sessionSecret = (await getSetting(db, SETTING.sessionSecret)) ?? "";
+  const presetRaw = String(formData.get("preset") ?? "generic");
+  const preset = presetRaw === "slack" || presetRaw === "discord" ? presetRaw : "generic";
 
-  await db.insert(webhooks).values({
-    id: ulid(),
-    formId: formId || null,
-    url: validated.url,
-    // Encrypted at rest: a database dump must not hand over the signing key.
-    secret: await encryptSecret(secret, sessionSecret),
-    createdAt: Date.now(),
-  });
+  try {
+    await db.insert(webhooks).values({
+      id: ulid(),
+      formId: formId || null,
+      url: validated.url,
+      secret: await encryptSecret(secret, sessionSecret),
+      preset,
+      createdAt: Date.now(),
+    });
+  } catch {
+    return { error: "Could not create the webhook." };
+  }
 
-  await audit(db, user.id, "webhook.create", { url: validated.url });
+  await audit(db, user.id, "webhook.create", { url: validated.url, preset });
   revalidatePath("/webhooks");
+  revalidatePath("/home");
 
-  // Shown once so the receiver can be configured; only the ciphertext is stored.
-  return { created: { secret } };
+  return { created: { secret, preset } };
 }
 
 export async function deleteWebhookAction(formData: FormData): Promise<void> {
@@ -54,6 +60,7 @@ export async function deleteWebhookAction(formData: FormData): Promise<void> {
 
   await audit(db, user.id, "webhook.delete", { webhookId: id });
   revalidatePath("/webhooks");
+  revalidatePath("/home");
 }
 
 export async function toggleWebhookAction(formData: FormData): Promise<void> {
@@ -101,7 +108,14 @@ export async function testWebhookAction(
     { email: "test@example.com", message: "This is a test delivery from FormFlare." },
   );
 
-  const result = await deliverWebhook(hook.url, secret, payload, `test_${ulid()}`);
+  const result = await deliverWebhook(
+    hook.url,
+    secret,
+    payload,
+    `test_${ulid()}`,
+    Date.now(),
+    hook.preset === "slack" || hook.preset === "discord" ? hook.preset : "generic",
+  );
 
   revalidatePath("/webhooks");
   return result.ok

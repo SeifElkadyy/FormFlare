@@ -45,20 +45,22 @@ export async function findExistingSignup(
   d1: D1Database,
   formId: string,
   normalisedEmail: string,
-): Promise<{ id: string; position: number | null } | null> {
+): Promise<{ id: string; position: number | null; optedInAt: number | null } | null> {
   // lower() on both sides, matching migration 0002's index, so this finds the row that
   // the unique index would collide with.
   const row = await d1
     .prepare(
-      `SELECT id, waitlist_position
+      `SELECT id, waitlist_position, opted_in_at
          FROM submissions
         WHERE form_id = ?1 AND lower(email) = lower(?2)
         LIMIT 1`,
     )
     .bind(formId, normalisedEmail)
-    .first<{ id: string; waitlist_position: number | null }>();
+    .first<{ id: string; waitlist_position: number | null; opted_in_at: number | null }>();
 
-  return row ? { id: row.id, position: row.waitlist_position } : null;
+  return row
+    ? { id: row.id, position: row.waitlist_position, optedInAt: row.opted_in_at }
+    : null;
 }
 
 /** Increment only, for non-waitlist forms that still track a total. */

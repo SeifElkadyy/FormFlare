@@ -31,7 +31,7 @@ export function CreateWebhookDialog({ forms }: { forms: { id: string; name: stri
         open={open}
         onClose={() => setOpen(false)}
         title="Add webhook"
-        description="Each submission is POSTed to this URL, signed so the receiver can verify it."
+        description="Each Slack, Discord or generic endpoint receives new submissions."
       >
         <CreateWebhookForm forms={forms} onDone={() => setOpen(false)} />
       </Modal>
@@ -49,14 +49,24 @@ function CreateWebhookForm({
   const [state, formAction, pending] = useActionState(createWebhookAction, initialState);
 
   if (state.created) {
+    const generic = state.created.preset === "generic";
     return (
       <div className="flex flex-col gap-3">
-        <p className="text-sm font-medium">Signing secret</p>
-        <p className={hintClass}>
-          Shown once. Store it in your receiver to verify the <code>X-FormFlare-Signature</code>{" "}
-          header.
-        </p>
-        <code className={codeBlockClass}>{state.created.secret}</code>
+        {generic ? (
+          <>
+            <p className="text-sm font-medium">Signing secret</p>
+            <p className={hintClass}>
+              Shown once. Store it in your receiver to verify the <code>X-FormFlare-Signature</code>{" "}
+              header.
+            </p>
+            <code className={codeBlockClass}>{state.created.secret}</code>
+          </>
+        ) : (
+          <p className="text-sm text-neutral-600 dark:text-neutral-300">
+            {state.created.preset === "slack" ? "Slack" : "Discord"} incoming webhook saved. No
+            signing secret is needed — those receivers use their own URL token.
+          </p>
+        )}
         <div className="flex justify-end pt-1">
           <button type="button" className={btnPrimary} onClick={onDone}>
             Done
@@ -68,6 +78,17 @@ function CreateWebhookForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <label htmlFor="preset" className={labelClass}>
+          Destination
+        </label>
+        <select id="preset" name="preset" defaultValue="generic" className={selectClass}>
+          <option value="generic">Generic (signed JSON)</option>
+          <option value="slack">Slack incoming webhook</option>
+          <option value="discord">Discord incoming webhook</option>
+        </select>
+      </div>
+
       <div className="flex flex-col gap-1">
         <label htmlFor="url" className={labelClass}>
           Endpoint URL

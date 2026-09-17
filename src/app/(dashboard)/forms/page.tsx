@@ -25,15 +25,15 @@ export default async function FormsPage({
     <div className="flex h-full min-h-0 flex-col">
       <PageHeader
         title="Forms"
-        description="Each form gets an endpoint you can point any HTML form at."
+        description="Each form gets an endpoint. Put your own HTML on your site, or copy a snippet."
         count={rows.length}
         actions={<CreateFormDialog defaultOpen={params.new === "1"} />}
       />
 
       {rows.length === 0 ? (
         <p className={emptyClass}>
-          No forms yet. Press <strong>New form</strong> to get an endpoint and a snippet to paste
-          into your site.
+          No forms yet. Press <strong>New form</strong> for an endpoint and snippets (HTML, fetch,
+          or React) to paste into your site.
         </p>
       ) : (
         <ul className="grid grid-cols-1 gap-3 p-6 sm:grid-cols-2">

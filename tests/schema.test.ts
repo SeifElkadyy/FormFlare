@@ -71,6 +71,8 @@ describe("defaults", () => {
     expect(form.fieldsJson).toBe("[]");
     expect(form.submissionCount).toBe(0);
     expect(form.autoReplyEnabled).toBe(false);
+    expect(form.doubleOptIn).toBe(false);
+    expect(form.referralBoost).toBe(0);
     expect(form.fileMaxBytes).toBe(5 * 1024 * 1024);
   });
 

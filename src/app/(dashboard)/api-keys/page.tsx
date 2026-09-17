@@ -29,7 +29,7 @@ export default async function ApiKeysPage() {
         count={rows.length}
         description={
           <>
-            Read submissions programmatically. Send as{" "}
+            Read submissions. Public forms post without a key. Send as{" "}
             <code>Authorization: Bearer ff_live_…</code>
           </>
         }

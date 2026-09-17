@@ -90,11 +90,26 @@ export const forms = sqliteTable(
       .default('["application/pdf","image/png","image/jpeg"]'),
     /** Monotonic counter; also the source of waitlist positions. */
     submissionCount: integer("submission_count").notNull().default(0),
+    /**
+     * Optional public slug for `/p/:slug`. Null means the hosted page is only reachable
+     * via the public id. SQLite unique indexes allow multiple NULLs.
+     */
+    slug: text("slug"),
+    /** Waitlist only: store the row, email a confirm link, assign a position on click. */
+    doubleOptIn: integer("double_opt_in", { mode: "boolean" }).notNull().default(false),
+    /**
+     * Places subtracted from waitlist position per confirmed referral when computing
+     * display rank. 0 records referrals but does not move anyone. The stored
+     * `waitlist_position` is never rewritten — colliding updates would break uniqueness.
+     */
+    referralBoost: integer("referral_boost").notNull().default(0),
+    hostedDescription: text("hosted_description"),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },
   (t) => [
     uniqueIndex("forms_public_id_uq").on(t.publicId),
+    uniqueIndex("forms_slug_uq").on(t.slug),
     index("forms_project_idx").on(t.projectId),
   ],
 );
@@ -113,6 +128,17 @@ export const submissions = sqliteTable(
       .notNull()
       .default("new"),
     waitlistPosition: integer("waitlist_position"),
+    /**
+     * Double opt-in: null until the confirm link is used. Backfilled to `created_at`
+     * for rows that predate the column, so existing signups stay confirmed.
+     */
+    optedInAt: integer("opted_in_at"),
+    /** Short public code for waitlist referral links (`?ref=`). */
+    referralCode: text("referral_code"),
+    /** Submission that referred this one, if `_ref` was valid. No FK: the referrer may be deleted. */
+    referredById: text("referred_by_id"),
+    /** Confirmed referrals credited to this signup. */
+    referralCount: integer("referral_count").notNull().default(0),
     /** SHA-256(ip + session_secret). Raw IPs are never stored. */
     ipHash: text("ip_hash"),
     country: text("country"),
@@ -134,6 +160,9 @@ export const submissions = sqliteTable(
     index("submissions_status_idx").on(t.status),
     // Drives the recovery sweep: find submissions that never finished fanning out.
     index("submissions_fanned_out_idx").on(t.fannedOutAt, t.createdAt),
+    uniqueIndex("submissions_referral_code_uq").on(t.referralCode),
+    index("submissions_referred_by_idx").on(t.referredById),
+    index("submissions_opted_in_idx").on(t.formId, t.optedInAt),
     // Waitlist dedupe is a partial unique index on (form_id, email); SQLite cannot
     // express the WHERE clause through Drizzle, so it is added in a raw SQL migration.
   ],
@@ -163,8 +192,12 @@ export const webhooks = sqliteTable(
     /** null = fires for every form. */
     formId: text("form_id").references(() => forms.id, { onDelete: "cascade" }),
     url: text("url").notNull(),
-    /** HMAC signing key, encrypted at rest. See Section 19. */
+    /** HMAC signing key, encrypted at rest. See Section 19. Dummy value for Slack/Discord presets. */
     secret: text("secret").notNull(),
+    /** "generic" (signed JSON), "slack", or "discord". */
+    preset: text("preset", { enum: ["generic", "slack", "discord"] })
+      .notNull()
+      .default("generic"),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
     createdAt: integer("created_at").notNull(),
   },
@@ -214,8 +247,8 @@ export const emailDeliveries = sqliteTable(
     submissionId: text("submission_id")
       .notNull()
       .references(() => submissions.id, { onDelete: "cascade" }),
-    /** "owner_alert" or "auto_reply". */
-    kind: text("kind", { enum: ["owner_alert", "auto_reply"] }).notNull(),
+    /** "owner_alert", "auto_reply", or "opt_in". */
+    kind: text("kind", { enum: ["owner_alert", "auto_reply", "opt_in"] }).notNull(),
     recipient: text("recipient").notNull(),
     status: text("status", {
       enum: ["pending", "sent", "failed", "skipped_unavailable", "skipped_rate_limited"],

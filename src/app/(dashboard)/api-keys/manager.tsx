@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useActionState } from "react";
 import { Modal } from "@/components/modal";
+import { CopyButton } from "@/components/copy-button";
 import { PlusIcon } from "@/components/icons";
 import {
   btnDanger,
@@ -58,6 +59,9 @@ function CreateKeyForm({ onDone }: { onDone: () => void }) {
         <p className={hintClass}>
           Shown once. Store it now — only a hash is kept, so it cannot be shown again.
         </p>
+        <div className="flex items-center justify-end">
+          <CopyButton text={state.created.plaintext} />
+        </div>
         <code className={codeBlockClass}>{state.created.plaintext}</code>
         <div className="flex justify-end pt-1">
           <button type="button" className={btnPrimary} onClick={onDone}>
@@ -101,7 +105,10 @@ function CreateKeyForm({ onDone }: { onDone: () => void }) {
 export function ApiKeyList({ keys }: { keys: KeyRow[] }) {
   if (keys.length === 0) {
     return (
-      <p className={emptyClass}>No API keys yet. Press <strong>New key</strong> to create one.</p>
+      <p className={emptyClass}>
+        No API keys yet. Press <strong>New key</strong> to read submissions from Zapier or your own
+        app. Posting to a form does not use a key.
+      </p>
     );
   }
 

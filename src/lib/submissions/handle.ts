@@ -9,6 +9,8 @@ import { isHoneypotHit, stripReserved } from "../spam/honeypot";
 import { originAllowed, resolveRedirect } from "../spam/origin";
 import { verifyTurnstile } from "../spam/turnstile";
 import { claimPosition, findExistingSignup, bumpSubmissionCount } from "../waitlist/position";
+import { findReferrer, newReferralCode, creditReferral } from "../waitlist/referral";
+import { waitlistRank } from "../waitlist/rank";
 import { extractEmail, parseFields, validateFields } from "./fields";
 import { loadForm } from "./form-cache";
 import { MAX_FIELDS_BYTES, parseBody, type ParsedFile } from "./parse";
@@ -77,7 +79,10 @@ export async function handleSubmission(
     return successResponse(request, form, parsed.wasJson, {
       id: ulid(),
       duplicate: false,
+      pending: false,
       position: null,
+      rank: null,
+      referralCode: null,
       redirectOverride: parsed.values._redirect,
     });
   }
@@ -120,10 +125,20 @@ export async function handleSubmission(
     }
   }
 
-  const saved = await saveSubmission(env, db, form, validation.data, parsed.files, request, ip);
+  const saved = await saveSubmission(
+    env,
+    db,
+    form,
+    validation.data,
+    parsed.files,
+    request,
+    ip,
+    parsed.values._ref,
+  );
 
   // Duplicate waitlist signups are not new submissions, so they create no job — the
-  // owner has already been notified about this person.
+  // owner has already been notified about this person. Pending double-opt-in duplicates
+  // also skip: the confirmation email was already sent.
   if (!saved.duplicate) {
     const jobs = cloudflareQueue(env.JOBS);
     ctx.waitUntil(jobs.send({ type: "submission.created", submissionId: saved.id }));
@@ -132,7 +147,10 @@ export async function handleSubmission(
   return successResponse(request, form, parsed.wasJson, {
     id: saved.id,
     duplicate: saved.duplicate,
+    pending: saved.pending,
     position: saved.position,
+    rank: saved.rank,
+    referralCode: saved.referralCode,
     redirectOverride: parsed.values._redirect,
   });
 }
@@ -140,7 +158,10 @@ export async function handleSubmission(
 interface SavedSubmission {
   id: string;
   duplicate: boolean;
+  pending: boolean;
   position: number | null;
+  rank: number | null;
+  referralCode: string | null;
 }
 
 async function saveSubmission(
@@ -151,6 +172,7 @@ async function saveSubmission(
   parsedFiles: ParsedFile[],
   request: Request,
   ip: string,
+  refCode: string | undefined,
 ): Promise<SavedSubmission> {
   const fields = parseFields(form.fieldsJson);
   const email = extractEmail(data, fields);
@@ -159,15 +181,27 @@ async function saveSubmission(
   if (form.mode === "waitlist" && email) {
     const existing = await findExistingSignup(env.DB, form.id, email);
     if (existing) {
-      // Idempotent: return the original position rather than creating a second row.
-      return { id: existing.id, duplicate: true, position: existing.position };
+      const pending = form.doubleOptIn && !existing.optedInAt;
+      const rank = existing.position !== null ? await waitlistRank(env.DB, form.id, existing.id) : null;
+      return {
+        id: existing.id,
+        duplicate: true,
+        pending,
+        position: rank?.rank ?? existing.position,
+        rank: rank?.rank ?? null,
+        referralCode: null,
+      };
     }
   }
 
-  const position = form.mode === "waitlist" ? await claimPosition(env.DB, form.id) : null;
+  const pending = form.mode === "waitlist" && form.doubleOptIn;
+  const position = form.mode === "waitlist" && !pending ? await claimPosition(env.DB, form.id) : null;
   if (form.mode !== "waitlist") await bumpSubmissionCount(env.DB, form.id);
 
   const submissionId = ulid(now);
+  const referralCode = form.mode === "waitlist" ? newReferralCode() : null;
+  const referrer =
+    form.mode === "waitlist" && refCode ? await findReferrer(env.DB, form.id, refCode) : null;
 
   // Files go to R2 before the row is written, so a submission never references an object
   // that does not exist. The reverse (object with no row) is cleaned up by the daily sweep.
@@ -192,6 +226,9 @@ async function saveSubmission(
       email,
       status: "new",
       waitlistPosition: position,
+      optedInAt: pending ? null : now,
+      referralCode,
+      referredById: referrer && referrer.id !== submissionId ? referrer.id : null,
       ipHash,
       country: (request as { cf?: { country?: string } }).cf?.country ?? null,
       userAgent: request.headers.get("user-agent")?.slice(0, 512) ?? null,
@@ -206,7 +243,15 @@ async function saveSubmission(
       if (existing) {
         // Roll back the objects this attempt uploaded; the winning row owns its own.
         for (const { key } of stored) await storage.delete(key).catch(() => {});
-        return { id: existing.id, duplicate: true, position: existing.position };
+        const dupPending = form.doubleOptIn && !existing.optedInAt;
+        return {
+          id: existing.id,
+          duplicate: true,
+          pending: dupPending,
+          position: existing.position,
+          rank: existing.position,
+          referralCode: null,
+        };
       }
     }
     for (const { key } of stored) await storage.delete(key).catch(() => {});
@@ -228,7 +273,21 @@ async function saveSubmission(
     );
   }
 
-  return { id: submissionId, duplicate: false, position };
+  if (referrer && !pending) {
+    await creditReferral(db, referrer.id);
+  }
+
+  const rank =
+    position !== null ? await waitlistRank(env.DB, form.id, submissionId) : null;
+
+  return {
+    id: submissionId,
+    duplicate: false,
+    pending,
+    position: rank?.rank ?? position,
+    rank: rank?.rank ?? null,
+    referralCode,
+  };
 }
 
 function isUniqueViolation(err: unknown): boolean {
@@ -294,7 +353,10 @@ function successResponse(
   result: {
     id: string;
     duplicate: boolean;
+    pending: boolean;
     position: number | null;
+    rank: number | null;
+    referralCode: string | null;
     redirectOverride?: string;
   },
 ): Response {
@@ -304,7 +366,16 @@ function successResponse(
         ok: true,
         id: result.id,
         ...(result.duplicate ? { duplicate: true } : {}),
-        ...(result.position !== null ? { waitlist: { position: result.position } } : {}),
+        ...(result.pending ? { pending: true } : {}),
+        ...(result.position !== null
+          ? {
+              waitlist: {
+                position: result.position,
+                ...(result.rank !== null ? { rank: result.rank } : {}),
+                ...(result.referralCode ? { referralCode: result.referralCode } : {}),
+              },
+            }
+          : {}),
       },
       { headers: corsHeaders(request) },
     );
@@ -312,7 +383,7 @@ function successResponse(
 
   // `_redirect` is only honoured when it matches an allow-listed origin (open redirect).
   const target = resolveRedirect(result.redirectOverride, form);
-  const location = target ?? thanksUrl(request, form, result.position);
+  const location = target ?? thanksUrl(request, form, result.position, result.pending);
 
   return new Response(null, {
     status: 303,
@@ -320,9 +391,15 @@ function successResponse(
   });
 }
 
-function thanksUrl(request: Request, form: Form, position: number | null): string {
+function thanksUrl(
+  request: Request,
+  form: Form,
+  position: number | null,
+  pending: boolean,
+): string {
   const url = new URL("/thanks", request.url);
   url.searchParams.set("form", form.publicId);
+  if (pending) url.searchParams.set("pending", "1");
   if (position !== null) url.searchParams.set("pos", String(position));
   return url.toString();
 }

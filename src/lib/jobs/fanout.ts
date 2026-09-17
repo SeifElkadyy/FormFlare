@@ -47,6 +47,20 @@ export async function fanOutSubmission(
 
   const jobs: Job[] = [];
 
+  // Double opt-in: only the confirmation email until the link is used. fanned_out_at is
+  // still set so recovery does not re-send this every 15 minutes. Confirm re-runs fan-out
+  // once opted_in_at is set, and recovery treats fanned_out_at < opted_in_at as unfinished.
+  if (form.doubleOptIn && !submission.optedInAt) {
+    const to = safeReplyTo(submission.email);
+    if (to) {
+      const id = await createEmailDelivery(db, submission.id, "opt_in", to, now);
+      if (id) jobs.push({ type: "email.send", deliveryId: id });
+    }
+    await db.update(submissions).set({ fannedOutAt: now }).where(eq(submissions.id, submission.id));
+    return jobs;
+  }
+
+
   for (const recipient of parseRecipients(form.notifyEmailsJson)) {
     const id = await createEmailDelivery(db, submission.id, "owner_alert", recipient, now);
     if (id) jobs.push({ type: "email.send", deliveryId: id });
@@ -96,7 +110,7 @@ export async function fanOutSubmission(
 async function createEmailDelivery(
   db: Database,
   submissionId: string,
-  kind: "owner_alert" | "auto_reply",
+  kind: "owner_alert" | "auto_reply" | "opt_in",
   recipient: string,
   now: number,
 ): Promise<string | null> {

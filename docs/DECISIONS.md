@@ -22,18 +22,165 @@ Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
 
 ## Next up
 
-- **README screenshot** — inbox + form settings. Noted as a TODO in the README; there is
-  no `public/screenshot.png` yet.
-- **v0.2.0 in-app update banner** — Cloudflare strips `.github/` when cloning, so
-  deployers never get the update workflow. The banner is how they find out a release
-  exists without reading the README.
-- **Optional Email Sending setup** — same shape as the R2 opt-in: document how to enable
-  owner alerts and auto-replies without making the binding required to deploy.
-- **v2 from the plan** — Workers AI spam scoring; waitlist double opt-in, referrals and
-  public count badge; hosted form pages and embed widget; Slack/Discord/Telegram
-  presets; n8n/Zapier templates; per-form analytics; tags, notes and a lead pipeline;
-  scheduled D1 → R2 backups and GDPR delete-by-email; TypeScript SDK and React
-  component; team members and roles.
+- **README screenshot / demo GIF / live demo** — waiting on final brand (logo, colour,
+  theme). Do not shoot the current UI for launch assets.
+- **Tag v0.2.0** when this work is verified — the in-app banner compares against GitHub
+  release tags, so it stays dark until that tag exists. Do not bump `package.json`
+  until the release commit.
+- **Later from the plan** — Workers AI spam scoring; Telegram presets; n8n/Zapier
+  templates; per-form analytics; tags, notes and a lead pipeline; scheduled D1 → R2
+  backups and GDPR delete-by-email; TypeScript SDK and React component; team members
+  and roles.
+
+---
+
+## 2026-09-18 — v0.2 feature set (one release)
+
+Shipped together, not as separate tags: an instance that can take a waitlist signup
+must also be able to email, confirm, show a public page, tell the owner a newer
+release exists, and wipe itself. Splitting those across releases would leave deployers
+on a half-working copy.
+
+### Settings
+
+There was no account settings page. `/settings` is now the workspace page: sender
+address, mail provider, password, instance URL, update check, JSON export, and delete
+account. The sidebar account card links here.
+
+**Progressive disclosure (2026-09-18).** Owners with no mailer were landing on Resend,
+From, API key, instance URL, password, updates, export and delete all at once, and
+thought they had to connect Gmail. Settings now starts calm: Inbox is the inbox;
+sending is optional and hidden behind “Turn on sending”. Password, instance URL and
+delete stay inside `<details>`. Email CTAs go to `/settings#email`. A saved
+`mailProvider=resend` without a working key still shows the off empty state, not the
+setup form.
+
+**Delete account** wipes the instance: R2 objects, every table, every settings row
+including `session_secret` and `setup_completed`. `/setup` works again. It is not
+"disable this user" — a single-owner install with setup locked and no users is a brick.
+The owner types their email to confirm.
+
+### Updates
+
+Cloudflare strips `.github/` on clone, so deployers never get `update-check.yml`. The
+dashboard banner and Settings → Check for updates fetch the latest *stable* GitHub
+release (`SeifElkadyy/FormFlare`), cache the result in D1 for six hours, and ignore
+pre-release tags the same way `scripts/check-update.mjs` does.
+
+The banner is dismissed per-browser (`localStorage`), not instance-wide. A check that
+fails (GitHub down, rate limit) keeps the last cache and does not block the dashboard.
+No token, no deploy secret — public API, 60 unauthenticated requests/hour, hence the
+cache.
+
+### Email: Cloudflare or Resend
+
+Still zero required secrets to deploy. The owner picks a provider in Settings:
+
+| Provider | How |
+| --- | --- |
+| Cloudflare | existing `EMAIL` binding |
+| Resend | API key pasted in Settings, encrypted at rest like Turnstile secrets |
+| Off | neither; forms still work |
+
+`Mailer` stays the interface. Resend is `fetch` to `https://api.resend.com/emails` —
+no SDK, no paid npm dependency. Unset provider keeps the old behaviour: Cloudflare if
+the binding exists, otherwise off.
+
+Auto-reply abuse rules are unchanged (off by default, owner text only, one per address
+per 24h). They apply whichever provider sends.
+
+### Hosted form pages
+
+`/p/:slug` renders the form's fields (via `effectiveFields()`, so it cannot drift from
+the embed snippet). Slug is optional and unique; the public id always works. `?ref=`
+is copied into a hidden `_ref` field for referrals.
+
+Same-origin posts from `/p/…` are allowed even when the form has an origin allow-list,
+otherwise a hosted page on this instance would 403 after the owner locked the form to
+their marketing site.
+
+`/p/*` is excluded from `frame-ancestors 'none'` / `X-Frame-Options: DENY` so the
+embed widget (`/widget.js`) can iframe it onto someone else's site. The dashboard
+keeps the clickjacking defence.
+
+Public count: `GET /f/:publicId/count` (JSON) and `GET /f/:publicId/badge.svg`.
+Waitlist counts confirmed signups only.
+
+### Waitlist: double opt-in and referrals
+
+`forms.double_opt_in` (default off). When on:
+
+- The row is stored with no position and `opted_in_at` null.
+- Fan-out sends only the confirmation email, then sets `fanned_out_at`.
+- Confirm (`/confirm?s=&exp=&sig=`, HMAC of the submission id, 7-day expiry) assigns
+  the position, credits the referrer, and fans out owner alerts / webhooks / auto-reply.
+- Recovery treats `fanned_out_at < opted_in_at` as "confirm fan-out did not finish".
+- Unconfirmed signups are excluded from the public count and from rank.
+
+Existing rows are backfilled `opted_in_at = created_at` so they stay confirmed.
+Default off means current waitlist tests and live forms are unchanged.
+
+Referrals: each waitlist signup gets a `referral_code`. `_ref` is a reserved field.
+`referral_boost` (default 0) is places subtracted per confirmed referral for **rank**,
+not a rewrite of `waitlist_position` (rewriting would collide). Rank is computed at
+read time: `position - referrals * boost`, ties broken by id. The original position
+stays the signup order.
+
+### Slack / Discord webhooks
+
+`webhooks.preset` is `generic` (default), `slack`, or `discord`. Generic still sends
+the signed JSON payload. Slack/Discord get an incoming-webhook body (`text` / `content`
++ embed) and skip HMAC — those receivers ignore our headers and reject unknown JSON.
+URLs are still `https` + public host. The signing secret column stays NOT NULL (a
+dummy is stored for presets) so this stays an additive column, not a nullability
+change.
+
+### What this is not
+
+Not a version bump. Not the README screenshot. Not Telegram, n8n templates, AI spam
+scoring, or teams.
+
+---
+
+## 2026-09-18 — Field editor, embed tabs, origin helper
+
+A standard form stored `fields_json = []`. The snippet and hosted page then guessed
+name/email/message, so owners could not add `company` or `phone` in the dashboard.
+The public endpoint already kept extra fields; the UI did not. That was the biggest
+gap after v0.2's waitlist/email work.
+
+**Field editor** on form settings: name, type (including `tel`), required, reorder.
+New forms seed `defaultFields()` instead of `[]`. Saving persists the list so the
+snippet, preview, and hosted page cannot drift.
+
+**Embed tabs** HTML / fetch JSON / React on the form page. The public `POST /f/:id`
+still needs no API key. Keys stay for reading submissions.
+
+**Allowed-origin helper:** input prefilled with the current page origin, **Add this
+site**, and the note "Your CSS, our endpoint." Fetch from a browser sends that Origin.
+
+**Double opt-in** cannot be turned on unless a mailer is available. An already-on
+form keeps the flag if email later goes off; Inbox shows a copyable confirm URL so
+unconfirmed signups are not a silent black hole.
+
+**Split view (2026-09-18).** The form page is now editor left, hosted-page preview
+right. Field, name and intro edits update the preview immediately. Send in the
+preview is a real POST. Share (HTML / link / widget) sits in a closed row so the
+left column can stay fields-first. `/forms/:id/preview` remains for a full-page
+Turnstile check.
+
+---
+
+## 2026-09-18 — Dashboard home
+
+Login and setup used to dump the owner in Inbox. An empty inbox is a dead end:
+it does not say what to do next, and it hides “put this on your site”, email, and
+fields.
+
+`/home` is the dashboard landing. Banners are computed from the instance (no form,
+no submissions, unconfirmed waitlist, email off, unused default fields) and capped
+at two. Quick access, a four-step checklist, and recent forms/submissions sit
+under that. Inbox stays Inbox.
 
 ---
 

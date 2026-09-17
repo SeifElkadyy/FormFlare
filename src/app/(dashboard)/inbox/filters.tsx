@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { FilterIcon } from "@/components/icons";
-import { btnGhost, btnSecondary, cn, inputClass, labelClass, selectClass } from "@/lib/ui";
+import { btnGhost, btnSecondary, cn, inputClass, labelClass, selectClass, segmentTrack } from "@/lib/ui";
 
 const STATUSES = [
   { value: "", label: "All" },
@@ -51,7 +51,7 @@ export function InboxFilters({
   return (
     <div className="flex items-center gap-3 border-b border-neutral-100 px-6 py-2.5 dark:border-neutral-800">
       <nav aria-label="Status" className="min-w-0 flex-1 overflow-x-auto">
-        <div className="flex h-8 items-center rounded-xl bg-neutral-100 p-0.5 dark:bg-neutral-800">
+        <div className={`${segmentTrack}`}>
           {STATUSES.map((status) => {
             const active = (current.status ?? "") === status.value;
             return (

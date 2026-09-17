@@ -6,6 +6,7 @@
 import { default as nextHandler } from "./.open-next/worker.js";
 import { consumeJobs } from "./src/lib/jobs/consumer";
 import { runDailyMaintenance, runRecoverySweep } from "./src/lib/jobs/maintenance";
+import { handlePublicBadge, handlePublicCount } from "./src/lib/submissions/count";
 import { handleSubmission } from "./src/lib/submissions/handle";
 
 export default {
@@ -15,6 +16,14 @@ export default {
     // Hot path: public submissions bypass Next.js for speed and full control
     // over CORS headers, redirects and status codes.
     if (url.pathname.startsWith("/f/")) {
+      const countMatch = url.pathname.match(/^\/f\/([^/]+)\/count\/?$/);
+      if (countMatch) {
+        return handlePublicCount(request, env, decodeURIComponent(countMatch[1]));
+      }
+      const badgeMatch = url.pathname.match(/^\/f\/([^/]+)\/badge\.svg$/);
+      if (badgeMatch) {
+        return handlePublicBadge(request, env, decodeURIComponent(badgeMatch[1]));
+      }
       return handleSubmission(request, env, ctx);
     }
 

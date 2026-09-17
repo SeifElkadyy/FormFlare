@@ -1,5 +1,10 @@
+import { headers } from "next/headers";
 import { requireUser } from "@/lib/auth/guard";
+import { getServices } from "@/lib/env";
+import { rememberInstanceUrl } from "@/lib/instance/url";
+import { getUpdateStatus } from "@/lib/update/check";
 import { DashboardShell } from "@/components/shell";
+import { UpdateBanner } from "@/components/update-banner";
 
 /**
  * Dashboard shell.
@@ -14,6 +19,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // touches data calls requireUserForMutation() as well — a layout check alone does
   // not protect server actions, which are separately addressable POST endpoints.
   const user = await requireUser();
+  const { db } = await getServices();
+  const headerList = await headers();
+  await rememberInstanceUrl(db, headerList.get("host"));
+  const update = await getUpdateStatus(db);
 
-  return <DashboardShell email={user.email}>{children}</DashboardShell>;
+  return (
+    <DashboardShell
+      email={user.email}
+      banner={
+        update.newer && update.latest ? (
+          <UpdateBanner latest={update.latest} htmlUrl={update.htmlUrl} />
+        ) : null
+      }
+    >
+      {children}
+    </DashboardShell>
+  );
 }

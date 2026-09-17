@@ -13,7 +13,7 @@ export function isHoneypotHit(values: Record<string, string>, honeypotField: str
 }
 
 /** Reserved names stripped from stored submission data. */
-export const RESERVED_FIELDS = ["cf-turnstile-response", "_redirect"] as const;
+export const RESERVED_FIELDS = ["cf-turnstile-response", "_redirect", "_ref"] as const;
 
 /** Remove reserved and honeypot fields before the data is stored. */
 export function stripReserved(

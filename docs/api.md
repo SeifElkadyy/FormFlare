@@ -5,7 +5,8 @@
 `POST https://your-instance/f/<publicId>`
 
 Accepts `application/x-www-form-urlencoded`, `multipart/form-data` and
-`application/json`.
+`application/json`. No API key — see [embedding.md](embedding.md) for HTML, fetch,
+and React snippets. API keys are for **reading** submissions.
 
 Responds with JSON when the request was JSON or `Accept: application/json` was sent;
 otherwise `303 See Other` to the form's redirect URL or the built-in `/thanks` page.
@@ -37,14 +38,30 @@ A honeypot hit returns a normal success response and stores nothing.
 ### Reserved fields
 
 Stripped before storage: the form's honeypot field (default `_gotcha`),
-`cf-turnstile-response`, and `_redirect`.
+`cf-turnstile-response`, `_redirect`, and `_ref` (waitlist referral code).
 
 `_redirect` is honoured **only** when it matches one of the form's allowed origins. A
 form with no allow-list cannot use it, otherwise any form would be an open redirect.
 
+Waitlist JSON may include `"pending": true` when double opt-in is on and the email is
+not confirmed yet. `GET /f/<publicId>/count` returns `{ "ok": true, "count": N }`
+(confirmed waitlist signups only). `GET /f/<publicId>/badge.svg` is the same number as
+an image.
+
+## Hosted pages
+
+`/p/<slug-or-publicId>` renders the form. `?ref=` is copied into `_ref`. Embed with:
+
+```html
+<script src="https://your-instance/widget.js" data-form="PUBLIC_ID" async></script>
+```
+
 ## Webhooks
 
-Each submission is POSTed to every active webhook for that form.
+Generic webhooks send this JSON with HMAC headers. Slack and Discord presets send
+incoming-webhook bodies (`text` / `content` + embed) and skip HMAC — those receivers
+reject unknown JSON.
+
 
 ### Headers
 

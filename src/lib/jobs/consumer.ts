@@ -3,10 +3,15 @@ import { createDb, type Database } from "../db/client";
 import { emailDeliveries, forms, submissions, webhookDeliveries, webhooks } from "../db/schema";
 import { SETTING, getSetting } from "../db/settings";
 import { decryptSecret } from "../crypto/secrets";
-import { cloudflareMailer, type Mailer } from "../platform/mailer";
+import { resolveMailer } from "../platform/resolve-mailer";
+import type { Mailer } from "../platform/mailer";
 import { cloudflareQueue } from "../platform/queue";
 import { autoReply, ownerAlert } from "../notify/templates";
+import { optInEmail } from "../notify/opt-in";
 import { safeReplyTo, sanitiseHeader } from "../notify/sanitise";
+import { getInstanceUrl } from "../instance/url";
+import { confirmPath, signConfirmToken } from "../waitlist/confirm";
+import { parsePreset } from "../webhooks/presets";
 import { buildPayload, deliverWebhook } from "../webhooks/deliver";
 import { fanOutSubmission } from "./fanout";
 import { MAX_ATTEMPTS, retryDelay, type Job } from "./types";
@@ -129,7 +134,7 @@ async function handleEmailSend(
   // The idempotency check: a redelivered job finds the row already resolved and stops.
   if (delivery.status !== "pending") return "ack";
 
-  const mailer: Mailer = deps.mailer ?? cloudflareMailer(env.EMAIL);
+  const mailer: Mailer = deps.mailer ?? (await resolveMailer(db, env));
 
   // Unavailable is not a transient failure — retrying cannot conjure a binding, and
   // doing so would burn the retry budget and delay nothing useful. Record and stop.
@@ -171,10 +176,28 @@ async function handleEmailSend(
   }
 
   const data = safeParse(submission.dataJson);
-  const rendered =
-    delivery.kind === "owner_alert"
-      ? ownerAlert(form, submission, data, dashboardUrl(env))
-      : autoReply(form);
+  let rendered: { subject: string; html: string; text: string };
+
+  if (delivery.kind === "opt_in") {
+    const sessionSecret = (await getSetting(db, SETTING.sessionSecret)) ?? "";
+    const origin = await getInstanceUrl(db);
+    if (!origin || !sessionSecret) {
+      await markEmail(
+        db,
+        deliveryId,
+        "skipped_unavailable",
+        attempts,
+        "Instance URL or session secret missing; cannot build a confirm link.",
+      );
+      return "ack";
+    }
+    const token = await signConfirmToken(submission.id, sessionSecret);
+    rendered = optInEmail(form.name, `${origin}${confirmPath(submission.id, token.exp, token.sig)}`);
+  } else if (delivery.kind === "owner_alert") {
+    rendered = ownerAlert(form, submission, data, dashboardUrl(env));
+  } else {
+    rendered = autoReply(form);
+  }
 
   // Reply-To is only set from a submitted address that passes strict validation, so a
   // crafted value cannot inject headers.
@@ -255,7 +278,14 @@ async function handleWebhookDeliver(
   }
 
   const payload = buildPayload(form, submission, safeParse(submission.dataJson));
-  const result = await deliverWebhook(hook.url, secret, payload, deliveryId);
+  const result = await deliverWebhook(
+    hook.url,
+    secret,
+    payload,
+    deliveryId,
+    Date.now(),
+    parsePreset(hook.preset),
+  );
 
   if (result.ok) {
     await markWebhook(db, deliveryId, "success", attempts, result.statusCode ?? null, null);

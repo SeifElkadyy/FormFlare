@@ -1,5 +1,6 @@
 import { BRAND } from "../brand";
 import type { Form, Submission } from "../db/schema";
+import { webhookBody, type WebhookPreset } from "./presets";
 import { signPayload, validateWebhookUrl } from "./sign";
 
 const TIMEOUT_MS = 10_000;
@@ -57,6 +58,7 @@ export async function deliverWebhook(
   payload: WebhookPayload,
   deliveryId: string,
   now: number = Date.now(),
+  preset: WebhookPreset = "generic",
 ): Promise<DeliveryResult> {
   // Re-validated at delivery time, not just when saved: the row may predate the check,
   // or DNS may now resolve the host somewhere private.
@@ -65,9 +67,9 @@ export async function deliverWebhook(
     return { ok: false, error: validated.error, retryable: false };
   }
 
-  const body = JSON.stringify(payload);
+  const encoded = webhookBody(preset, payload);
   const timestamp = Math.floor(now / 1000);
-  const signature = await signPayload(secret, timestamp, body);
+  const signature = encoded.signed ? await signPayload(secret, timestamp, encoded.body) : null;
 
   try {
     const response = await fetch(validated.url, {
@@ -77,10 +79,14 @@ export async function deliverWebhook(
         "User-Agent": `${BRAND.name}/1.0`,
         "X-FormFlare-Event": payload.event,
         "X-FormFlare-Delivery": deliveryId,
-        "X-FormFlare-Timestamp": String(timestamp),
-        "X-FormFlare-Signature": signature,
+        ...(signature
+          ? {
+              "X-FormFlare-Timestamp": String(timestamp),
+              "X-FormFlare-Signature": signature,
+            }
+          : {}),
       },
-      body,
+      body: encoded.body,
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
 

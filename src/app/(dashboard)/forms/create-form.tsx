@@ -19,6 +19,11 @@ export function CreateFormDialog({ defaultOpen = false }: { defaultOpen?: boolea
     if (defaultOpen) router.replace("/forms");
   }
 
+  function onCreated() {
+    close();
+    router.refresh();
+  }
+
   return (
     <>
       <button type="button" className={btnPrimaryLead} onClick={() => setOpen(true)}>
@@ -29,9 +34,9 @@ export function CreateFormDialog({ defaultOpen = false }: { defaultOpen?: boolea
         open={open}
         onClose={close}
         title="New form"
-        description="You’ll get an endpoint and a snippet to paste into your site."
+        description="You’ll get fields you can edit, an endpoint, and snippets to paste into your site."
       >
-        <CreateFormFields onCreated={close} />
+        <CreateFormFields onCreated={onCreated} />
       </Modal>
     </>
   );

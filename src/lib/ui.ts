@@ -52,7 +52,16 @@ export const emptyClass =
   "flex flex-1 items-center justify-center px-6 py-20 text-center text-sm leading-6 text-neutral-500";
 
 export const alertClass =
-  "rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200";
+  "rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200";
+
+export const infoClass =
+  "rounded-xl bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-900 dark:bg-blue-950/40 dark:text-blue-100";
+
+export const successClass =
+  "rounded-xl bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200";
+
+export const segmentTrack =
+  "flex h-8 items-center rounded-xl bg-neutral-100 p-0.5 dark:bg-neutral-800";
 
 export const codeBlockClass =
   "block overflow-x-auto rounded-lg bg-[#eef3fb] p-3 font-mono text-xs break-all text-neutral-800 dark:bg-neutral-950 dark:text-neutral-200";

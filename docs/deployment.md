@@ -16,6 +16,10 @@ Resources created automatically:
 | Queue         | `JOBS`  | Email and webhook delivery         |
 | Email Sending | `EMAIL` | Owner alerts (optional at runtime) |
 
+Email is optional. After `/setup`, Settings can use the Cloudflare binding **or** a
+Resend API key stored in D1 (never a deploy secret). Forms still work with email off.
+
+
 You can rename the Worker, the database and the queue on the setup page — nothing
 depends on those names.
 

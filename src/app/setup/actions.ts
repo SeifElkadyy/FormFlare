@@ -70,5 +70,5 @@ export async function createOwnerAction(
     maxAge: SESSION_TTL_MS / 1000,
   });
 
-  redirect("/inbox");
+  redirect("/home");
 }

@@ -220,6 +220,8 @@ against brute force, not a strict quota. Add WAF rules if you need a firm limit.
 
 ## Documentation
 
+- [Embedding](./docs/embedding.md) — HTML, fetch/JSON, and React on your own site
+- [API](./docs/api.md)
 - [Troubleshooting](./docs/troubleshooting.md)
 - [Decisions](./docs/DECISIONS.md)
 

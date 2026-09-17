@@ -21,6 +21,7 @@
  * ceiling, not a choice; revisit only if workerd raises the cap.
  */
 export const PBKDF2_ITERATIONS = 100_000;
+export const MIN_PASSWORD_LENGTH = 12;
 
 const SALT_BYTES = 16;
 const KEY_BITS = 256;

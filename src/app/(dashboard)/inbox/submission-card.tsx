@@ -3,6 +3,8 @@
 import { useState, type ReactNode } from "react";
 import { deleteSubmissionAction, setStatusAction } from "./actions";
 import { LocalTime } from "./local-time";
+import { CopyButton } from "@/components/copy-button";
+import { Notice } from "@/components/notice";
 import { ArchiveIcon, MailOpenIcon, SpamIcon, TrashIcon } from "@/components/icons";
 import { btnDanger, btnIcon, btnToolbar, pillClass } from "@/lib/ui";
 
@@ -16,6 +18,7 @@ interface Props {
     waitlistPosition: number | null;
     country: string | null;
     createdAt: number;
+    confirmUrl: string | null;
   };
 }
 
@@ -52,6 +55,9 @@ export function SubmissionCard({ submission }: Props) {
               className={`truncate text-sm ${unread ? "font-semibold text-neutral-950 dark:text-white" : "text-neutral-700 dark:text-neutral-200"}`}
             >
               {submission.email ?? "(no email)"}
+              {submission.confirmUrl ? (
+                <span className="ml-2 font-medium text-amber-800 dark:text-amber-200">Unconfirmed</span>
+              ) : null}
             </span>
             <span className="hidden truncate text-sm text-neutral-500 sm:block">
               {submission.formName}
@@ -94,6 +100,16 @@ export function SubmissionCard({ submission }: Props) {
             </span>
             <RowActions submission={submission} />
           </div>
+          {submission.confirmUrl ? (
+            <div className="mt-3 flex flex-col gap-2">
+              <Notice tone="warning">
+                Email is not confirmed yet. Copy this link if you need to confirm them yourself.
+              </Notice>
+              <div className="flex items-center justify-end">
+                <CopyButton text={submission.confirmUrl} label="Copy confirm link" />
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </li>

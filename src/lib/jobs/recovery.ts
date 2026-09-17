@@ -1,6 +1,6 @@
-import { and, eq, isNull, lt, ne } from "drizzle-orm";
+import { and, eq, isNull, lt, ne, sql } from "drizzle-orm";
 import type { Database } from "../db/client";
-import { emailDeliveries, submissions, webhookDeliveries } from "../db/schema";
+import { emailDeliveries, forms, submissions, webhookDeliveries } from "../db/schema";
 import type { JobQueue } from "../platform/queue";
 
 /**
@@ -61,6 +61,28 @@ export async function recoverStuckWork(
     .limit(limit);
 
   for (const row of unfanned) {
+    await queue.send({ type: "submission.created", submissionId: row.id });
+    result.reFannedOut++;
+  }
+
+  // Confirmed waitlist signups whose opt-in fan-out finished (fanned_out_at set) but
+  // the post-confirm fan-out did not (fanned_out_at is still earlier than opted_in_at).
+  const unnotified = await db
+    .select({ id: submissions.id })
+    .from(submissions)
+    .innerJoin(forms, eq(forms.id, submissions.formId))
+    .where(
+      and(
+        sql`${submissions.optedInAt} is not null`,
+        sql`${submissions.fannedOutAt} is not null`,
+        sql`${submissions.fannedOutAt} < ${submissions.optedInAt}`,
+        ne(submissions.status, "spam"),
+        lt(submissions.optedInAt, cutoff),
+      ),
+    )
+    .limit(limit);
+
+  for (const row of unnotified) {
     await queue.send({ type: "submission.created", submissionId: row.id });
     result.reFannedOut++;
   }

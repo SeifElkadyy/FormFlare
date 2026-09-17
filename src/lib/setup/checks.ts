@@ -102,7 +102,7 @@ function checkEmail(env: CloudflareEnv): SystemCheck {
       name: "Email sending",
       status: "warn",
       detail: "Not configured. Forms still work; owner alerts and auto-replies are off.",
-      fix: "Enable Cloudflare Email Sending for your domain. Sending to arbitrary recipients needs the Workers Paid plan.",
+      fix: "Enable Cloudflare Email Sending, or add a Resend API key later in Settings. Sending to arbitrary recipients via Cloudflare needs the Workers Paid plan. The app works without email.",
     };
   }
   return {

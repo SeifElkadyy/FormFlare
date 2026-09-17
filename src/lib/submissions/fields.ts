@@ -1,16 +1,35 @@
 import { z } from "zod";
 
+export const FIELD_TYPES = ["text", "email", "textarea", "number", "url", "tel", "file"] as const;
+export type FieldType = (typeof FIELD_TYPES)[number];
+
 /** A field as configured in the dashboard and stored in `forms.fields_json`. */
 export interface FieldConfig {
   name: string;
-  type: "text" | "email" | "textarea" | "number" | "url" | "file";
+  type: FieldType;
   required?: boolean;
   maxLength?: number;
 }
 
+export const FIELD_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
+export const MAX_FORM_FIELDS = 30;
+
+/**
+ * Names the public endpoint already treats as control, not data. A dashboard field
+ * with the same name would be stripped on every submit, so the owner would think
+ * "company" was saved when it was `_redirect`.
+ */
+export function isReservedFieldName(name: string, honeypot = "_gotcha"): boolean {
+  return name === honeypot || name.startsWith("_") || name === "cf-turnstile-response";
+}
+
 export const fieldConfigSchema = z.object({
-  name: z.string().min(1).max(64),
-  type: z.enum(["text", "email", "textarea", "number", "url", "file"]),
+  name: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(FIELD_NAME_PATTERN, "Use letters, numbers, _ or -; start with a letter."),
+  type: z.enum(FIELD_TYPES),
   required: z.boolean().optional(),
   maxLength: z.number().int().positive().max(100_000).optional(),
 });
@@ -50,6 +69,56 @@ export function effectiveFields(fieldsJson: string, mode: string): FieldConfig[]
   return configured.length > 0
     ? configured
     : defaultFields(mode === "waitlist" ? "waitlist" : "standard");
+}
+
+/** Label shown on hosted/preview forms. `company_name` → `Company name`. */
+export function fieldLabel(name: string): string {
+  const spaced = name.replace(/[_-]+/g, " ").trim();
+  if (!spaced) return name;
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/**
+ * Persist what the dashboard editor submitted.
+ *
+ * Empty `[]` is how v0.1 stored a standard form, and the snippet then guessed
+ * name/email/message. Saving an explicit list is what makes the editor, preview
+ * and embed agree — including a newly added `company` or `phone`.
+ */
+export function parseFieldsPayload(
+  raw: string,
+  mode: string,
+  honeypot = "_gotcha",
+): { ok: true; fields: FieldConfig[] } | { ok: false; error: string } {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { ok: false, error: "Fields could not be read. Refresh and try again." };
+  }
+
+  const result = z.array(fieldConfigSchema).safeParse(parsed);
+  if (!result.success) return { ok: false, error: "A field name or type is not valid." };
+  if (result.data.length === 0) return { ok: false, error: "Add at least one field." };
+  if (result.data.length > MAX_FORM_FIELDS) {
+    return { ok: false, error: `A form can have at most ${MAX_FORM_FIELDS} fields.` };
+  }
+
+  const seen = new Set<string>();
+  for (const field of result.data) {
+    const key = field.name.toLowerCase();
+    if (seen.has(key)) return { ok: false, error: `Two fields are named ${field.name}.` };
+    seen.add(key);
+    if (isReservedFieldName(field.name, honeypot)) {
+      return { ok: false, error: `${field.name} is reserved. Pick another name.` };
+    }
+  }
+
+  if (mode === "waitlist" && !result.data.some((field) => field.type === "email")) {
+    return { ok: false, error: "A waitlist needs an email field to confirm and dedupe signups." };
+  }
+
+  return { ok: true, fields: result.data };
 }
 
 /** Default cap on any single text value, so one field cannot carry a megabyte. */

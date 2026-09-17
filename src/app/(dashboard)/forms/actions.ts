@@ -7,12 +7,17 @@ import { audit } from "@/lib/auth/login";
 import { encryptSecret } from "@/lib/crypto/secrets";
 import { forms, projects } from "@/lib/db/schema";
 import { SETTING, getSetting } from "@/lib/db/settings";
-import { getServices } from "@/lib/env";
 import { publicId as newPublicId, ulid } from "@/lib/ids";
 import { deleteForm as deleteFormWithFiles } from "@/lib/submissions/delete";
 import { invalidateForm } from "@/lib/submissions/form-cache";
+import { getEnv, getServices } from "@/lib/env";
+import { mailerStatus } from "@/lib/platform/resolve-mailer";
+import { originFromInput } from "@/lib/spam/origin-input";
+import { defaultFields, parseFieldsPayload } from "@/lib/submissions/fields";
+import { refuseDoubleOptIn } from "@/lib/waitlist/opt-in";
+import { parseSlug } from "@/lib/waitlist/slug";
 
-export type FormState = { error?: string; created?: boolean };
+export type FormState = { error?: string; created?: boolean; saved?: boolean };
 
 /**
  * Every action here calls requireUserForMutation(), which checks the session AND the
@@ -46,21 +51,21 @@ export async function createFormAction(_prev: FormState, formData: FormData): Pr
     name,
     mode,
     // Waitlists need an email to dedupe on, so seed the field for them.
-    fieldsJson:
-      mode === "waitlist"
-        ? JSON.stringify([{ name: "email", type: "email", required: true }])
-        : "[]",
+    fieldsJson: JSON.stringify(defaultFields(mode)),
     createdAt: now,
     updatedAt: now,
   });
 
   revalidatePath("/forms");
+  revalidatePath("/home");
   return { created: true };
 }
 
 export async function updateFormAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireUserForMutation();
   const { db } = await getServices();
+  const env = await getEnv();
+  const mail = await mailerStatus(db, env);
 
   const id = String(formData.get("id") ?? "");
   const rows = await db.select().from(forms).where(eq(forms.id, id)).limit(1);
@@ -73,8 +78,9 @@ export async function updateFormAction(_prev: FormState, formData: FormData): Pr
   const redirectUrl = String(formData.get("redirectUrl") ?? "").trim();
   const allowedOrigins = String(formData.get("allowedOrigins") ?? "")
     .split(/[\n,]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+    .map((s) => originFromInput(s))
+    .filter((origin): origin is string => Boolean(origin));
+  const uniqueOrigins = [...new Set(allowedOrigins)];
 
   const notifyEmails = String(formData.get("notifyEmails") ?? "")
     .split(/[\n,]/)
@@ -88,6 +94,43 @@ export async function updateFormAction(_prev: FormState, formData: FormData): Pr
   const turnstileSiteKey = String(formData.get("turnstileSiteKey") ?? "").trim();
   const turnstileSecretInput = String(formData.get("turnstileSecret") ?? "").trim();
 
+  const slugResult = parseSlug(String(formData.get("slug") ?? ""));
+  if (!slugResult.ok) return { error: slugResult.error };
+  if (slugResult.slug && slugResult.slug === form.publicId) {
+    return { error: "Slug cannot match this form's public id." };
+  }
+  if (slugResult.slug) {
+    const clash = await db.select({ id: forms.id }).from(forms).where(eq(forms.publicId, slugResult.slug)).limit(1);
+    if (clash[0] && clash[0].id !== form.id) {
+      return { error: "That slug matches another form's public id." };
+    }
+  }
+
+  const hostedDescription = String(formData.get("hostedDescription") ?? "").trim();
+  const wantsDoubleOptIn = form.mode === "waitlist" && formData.get("doubleOptIn") === "on";
+  const doubleOptInError = refuseDoubleOptIn({
+    mode: form.mode,
+    enable: wantsDoubleOptIn,
+    alreadyOn: form.doubleOptIn,
+    mailerAvailable: mail.available,
+  });
+  if (doubleOptInError) return { error: doubleOptInError };
+  const doubleOptIn = form.mode === "waitlist" && (wantsDoubleOptIn || (form.doubleOptIn && !mail.available));
+
+  const fieldsRaw = String(formData.get("fieldsJson") ?? "");
+  let fieldsJson = form.fieldsJson;
+  if (fieldsRaw) {
+    const parsed = parseFieldsPayload(fieldsRaw, form.mode, form.honeypotField);
+    if (!parsed.ok) return { error: parsed.error };
+    fieldsJson = JSON.stringify(parsed.fields);
+  }
+
+  const referralBoostRaw = Number(formData.get("referralBoost") ?? form.referralBoost);
+  const referralBoost =
+    Number.isInteger(referralBoostRaw) && referralBoostRaw >= 0 && referralBoostRaw <= 100
+      ? referralBoostRaw
+      : 0;
+
   // Only re-encrypt when a new secret was typed; an empty field means "leave it".
   let turnstileSecret = form.turnstileSecret;
   if (turnstileSecretInput) {
@@ -95,31 +138,46 @@ export async function updateFormAction(_prev: FormState, formData: FormData): Pr
     turnstileSecret = await encryptSecret(turnstileSecretInput, sessionSecret);
   }
 
-  await db
-    .update(forms)
-    .set({
-      name,
-      active: formData.get("active") === "on",
-      redirectUrl: redirectUrl || null,
-      allowedOriginsJson: JSON.stringify(allowedOrigins),
-      notifyEmailsJson: JSON.stringify(notifyEmails),
-      autoReplyEnabled,
-      autoReplySubject: autoReplySubject || null,
-      autoReplyBody: autoReplyBody || null,
-      turnstileSiteKey: turnstileSiteKey || null,
-      turnstileSecret,
-      updatedAt: Date.now(),
-    })
-    .where(eq(forms.id, id));
+  try {
+    await db
+      .update(forms)
+      .set({
+        name,
+        active: formData.get("active") === "on",
+        redirectUrl: redirectUrl || null,
+        allowedOriginsJson: JSON.stringify(uniqueOrigins),
+        fieldsJson,
+        notifyEmailsJson: JSON.stringify(notifyEmails),
+        autoReplyEnabled,
+        autoReplySubject: autoReplySubject || null,
+        autoReplyBody: autoReplyBody || null,
+        turnstileSiteKey: turnstileSiteKey || null,
+        turnstileSecret,
+        slug: slugResult.slug,
+        hostedDescription: hostedDescription || null,
+        doubleOptIn,
+        referralBoost,
+        updatedAt: Date.now(),
+      })
+      .where(eq(forms.id, id));
+  } catch (err) {
+    const cause = (err as { cause?: { message?: string } }).cause?.message ?? "";
+    if (/UNIQUE constraint failed/i.test(cause)) {
+      return { error: "That slug is already in use." };
+    }
+    throw err;
+  }
 
   // Clear this isolate's cache so the change is visible here immediately; other
   // isolates expire within 30s.
-  invalidateForm(form.publicId);
+  invalidateForm(form.publicId, form.slug);
+  invalidateForm(form.publicId, slugResult.slug);
 
   await audit(db, user.id, "form.update", { formId: id });
   revalidatePath("/forms");
   revalidatePath(`/forms/${id}`);
-  return {};
+  revalidatePath("/home");
+  return { saved: true };
 }
 
 export async function deleteFormAction(formData: FormData): Promise<void> {
@@ -136,4 +194,5 @@ export async function deleteFormAction(formData: FormData): Promise<void> {
 
   await audit(db, user.id, "form.delete", { formId: id, name: form.name });
   revalidatePath("/forms");
+  revalidatePath("/home");
 }

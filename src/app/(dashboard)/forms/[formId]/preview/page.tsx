@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/guard";
 import { forms } from "@/lib/db/schema";
 import { getServices } from "@/lib/env";
-import { effectiveFields } from "@/lib/submissions/fields";
+import { effectiveFields, fieldLabel } from "@/lib/submissions/fields";
 import { PageHeader } from "@/components/page-header";
 import { btnPrimary, cardClass, inputClass, labelClass, textareaClass } from "@/lib/ui";
 
@@ -44,7 +44,7 @@ export default async function FormPreviewPage({ params }: { params: Promise<{ fo
     <div className="flex h-full min-h-0 flex-col">
       <PageHeader
         title={`Preview — ${form.name}`}
-        description="A real submission. Use it to check your fields and Turnstile keys before pointing a site at the endpoint."
+        description="A real submission. The form page also shows this beside settings."
       />
 
       <form action={endpoint} method="POST" className={`${cardClass} mx-6 my-6 flex max-w-md flex-col gap-4`}>
@@ -61,7 +61,8 @@ export default async function FormPreviewPage({ params }: { params: Promise<{ fo
         {visible.map((field) => (
           <div key={field.name} className="flex flex-col gap-1">
             <label htmlFor={`preview-${field.name}`} className={labelClass}>
-              {field.name}
+              {fieldLabel(field.name)}
+              {field.required ? "" : " (optional)"}
             </label>
             {field.type === "textarea" ? (
               <textarea
@@ -76,7 +77,15 @@ export default async function FormPreviewPage({ params }: { params: Promise<{ fo
                 id={`preview-${field.name}`}
                 name={field.name}
                 type={
-                  field.type === "email" ? "email" : field.type === "number" ? "number" : "text"
+                  field.type === "email"
+                    ? "email"
+                    : field.type === "number"
+                      ? "number"
+                      : field.type === "url"
+                        ? "url"
+                        : field.type === "tel"
+                          ? "tel"
+                          : "text"
                 }
                 required={field.required}
                 className={inputClass}

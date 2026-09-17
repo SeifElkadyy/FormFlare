@@ -26,7 +26,7 @@ export default async function WebhooksPage() {
     <div className="flex h-full min-h-0 flex-col">
       <PageHeader
         title="Webhooks"
-        description="Send each submission to any https endpoint, signed so the receiver can verify it came from you."
+        description="Forward submissions to Slack, Discord, or any https endpoint."
         count={rows.length}
         actions={<CreateWebhookDialog forms={formRows} />}
       />
@@ -45,6 +45,7 @@ export default async function WebhooksPage() {
                 id: hook.id,
                 url: hook.url,
                 active: hook.active,
+                preset: hook.preset,
                 formName: formRows.find((f) => f.id === hook.formId)?.name ?? "All forms",
               }}
               deliveries={deliveries

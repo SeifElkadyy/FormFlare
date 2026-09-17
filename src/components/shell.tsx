@@ -8,11 +8,13 @@ import { BrandMark } from "./brand-mark";
 import {
   CloseIcon,
   FormsIcon,
+  HomeIcon,
   InboxIcon,
   KeysIcon,
   MenuIcon,
   PlusIcon,
   SearchIcon,
+  SettingsIcon,
   WebhooksIcon,
 } from "./icons";
 import { ThemeToggle } from "./theme";
@@ -23,6 +25,7 @@ const NAV = [
   {
     label: "Collect",
     items: [
+      { href: "/home", label: "Home", icon: HomeIcon, match: "/home", exact: true },
       { href: "/inbox", label: "Inbox", icon: InboxIcon, match: "/inbox" },
       { href: "/forms", label: "Forms", icon: FormsIcon, match: "/forms" },
     ],
@@ -32,15 +35,18 @@ const NAV = [
     items: [
       { href: "/webhooks", label: "Webhooks", icon: WebhooksIcon, match: "/webhooks" },
       { href: "/api-keys", label: "API keys", icon: KeysIcon, match: "/api-keys" },
+      { href: "/settings", label: "Settings", icon: SettingsIcon, match: "/settings" },
     ],
   },
 ] as const;
 
 export function DashboardShell({
   email,
+  banner,
   children,
 }: {
   email: string;
+  banner?: ReactNode;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -83,6 +89,7 @@ export function DashboardShell({
       ) : null}
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[20px] bg-white shadow-[var(--shadow-border)] dark:bg-neutral-900">
+        {banner}
         <header className="flex h-14 shrink-0 items-center gap-3 border-b border-neutral-100 px-4 dark:border-neutral-800">
           <button
             type="button"
@@ -120,7 +127,7 @@ function SidebarNav({
   return (
     <nav className="flex min-h-full flex-col" aria-label="Dashboard">
       <div className="px-1 pb-4">
-        <BrandMark href="/inbox" size="sm" />
+        <BrandMark href="/home" size="sm" />
       </div>
 
       <Link
@@ -139,7 +146,10 @@ function SidebarNav({
           </p>
           <div className="flex flex-col gap-1">
             {group.items.map((item) => {
-              const active = pathname === item.match || pathname.startsWith(`${item.match}/`);
+              const active =
+                "exact" in item && item.exact
+                  ? pathname === item.match
+                  : pathname === item.match || pathname.startsWith(`${item.match}/`);
               const Icon = item.icon;
               return (
                 <Link
@@ -177,6 +187,13 @@ function SidebarNav({
             {email}
           </p>
         </div>
+        <Link
+          href="/settings"
+          onClick={onNavigate}
+          className="press mt-1 block rounded-lg px-2 py-1.5 text-xs font-medium text-neutral-500 no-underline"
+        >
+          Settings
+        </Link>
         <form action={logoutAction}>
           <button
             type="submit"

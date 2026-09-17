@@ -12,7 +12,7 @@ import { btnDanger, btnToolbar, errorClass, hintClass, pillClass } from "@/lib/u
 const initialState: WebhookState = {};
 
 interface Props {
-  hook: { id: string; url: string; active: boolean; formName: string };
+  hook: { id: string; url: string; active: boolean; formName: string; preset: string };
   deliveries: {
     id: string;
     status: string;
@@ -33,6 +33,7 @@ export function WebhookRow({ hook, deliveries }: Props) {
           <span className="break-all font-mono text-xs text-neutral-800 dark:text-neutral-200">{hook.url}</span>
           <p className={`mt-1 ${hintClass}`}>
             {hook.formName}
+            {hook.preset !== "generic" ? ` · ${hook.preset}` : ""}
             {!hook.active ? " · disabled" : ""}
           </p>
         </div>

@@ -44,8 +44,8 @@ export default async function Home() {
   const configured = await anyUserExists(env.DB);
   const primaryHref = configured ? "/login" : "/setup";
   const primaryLabel = configured ? "Open dashboard" : "Create account";
-  const secondaryHref = configured ? "/inbox" : "/login";
-  const secondaryLabel = configured ? "View inbox" : "Log in";
+  const secondaryHref = configured ? "/home" : "/login";
+  const secondaryLabel = configured ? "Open dashboard" : "Log in";
 
   return (
     <div className="min-h-dvh bg-[#f4f6fb] text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
@@ -57,7 +57,7 @@ export default async function Home() {
             Log in
           </Link>
           <Link
-            href={configured ? "/inbox" : "/setup"}
+            href={configured ? "/home" : "/setup"}
             className={`${btnPrimary} no-underline`}
           >
             {configured ? "Open dashboard" : "Create account"}

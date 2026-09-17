@@ -8,6 +8,14 @@ export const SETTING = {
   setupCompleted: "setup_completed",
   signupEnabled: "signup_enabled",
   notifyFrom: "notify_from",
+  /** "cloudflare" | "resend" | "off". Unset → Cloudflare if bound, else off. */
+  mailProvider: "mail_provider",
+  /** Encrypted Resend API key. */
+  resendApiKey: "resend_api_key",
+  /** Origin of this instance, used in confirmation emails and referral links. */
+  instanceUrl: "instance_url",
+  /** JSON cache of the last GitHub release check. */
+  updateCheck: "update_check",
 } as const;
 
 export async function getSetting(db: Database, key: string): Promise<string | null> {

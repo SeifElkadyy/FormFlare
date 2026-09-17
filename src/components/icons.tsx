@@ -2,7 +2,12 @@ import type { LucideProps } from "lucide-react";
 import {
   Archive,
   ArrowRight,
+  Check,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
+  Copy,
+  House,
   Inbox,
   KeyRound,
   ListFilter,
@@ -12,6 +17,7 @@ import {
   NotepadText,
   Plus,
   Search,
+  Settings,
   ShieldAlert,
   ShieldCheck,
   SunMedium,
@@ -27,6 +33,10 @@ const icon = {
   "aria-hidden": true,
 } satisfies LucideProps;
 
+export function HomeIcon() {
+  return <House {...icon} />;
+}
+
 export function InboxIcon() {
   return <Inbox {...icon} />;
 }
@@ -41,6 +51,10 @@ export function WebhooksIcon() {
 
 export function KeysIcon() {
   return <KeyRound {...icon} />;
+}
+
+export function SettingsIcon() {
+  return <Settings {...icon} />;
 }
 
 export function MenuIcon() {
@@ -77,6 +91,22 @@ export function PlusIcon() {
 
 export function ChevronRightIcon() {
   return <ChevronRight {...icon} />;
+}
+
+export function ChevronUpIcon() {
+  return <ChevronUp {...icon} />;
+}
+
+export function ChevronDownIcon() {
+  return <ChevronDown {...icon} />;
+}
+
+export function CopyIcon() {
+  return <Copy {...icon} />;
+}
+
+export function CheckIcon() {
+  return <Check {...icon} />;
 }
 
 export function ArchiveIcon() {

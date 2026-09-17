@@ -1,9 +1,9 @@
 import type { Database } from "../db/client";
 import { SETTING, setSetting } from "../db/settings";
 import { ulid, token } from "../ids";
-import { hashPassword } from "./password";
+import { hashPassword, MIN_PASSWORD_LENGTH } from "./password";
 
-export const MIN_PASSWORD_LENGTH = 12;
+export { MIN_PASSWORD_LENGTH };
 
 export type CreateOwnerResult =
   | { ok: true; userId: string }

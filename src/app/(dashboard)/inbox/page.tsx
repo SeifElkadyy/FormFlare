@@ -1,8 +1,12 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { requireUser } from "@/lib/auth/guard";
+import { SETTING, getSetting } from "@/lib/db/settings";
 import { forms } from "@/lib/db/schema";
 import { getServices } from "@/lib/env";
+import { getInstanceUrl } from "@/lib/instance/url";
 import { listSubmissions, parseFilters } from "@/lib/submissions/query";
+import { confirmPath, signConfirmToken } from "@/lib/waitlist/confirm";
 import { PageHeader } from "@/components/page-header";
 import { btnGhost, emptyClass } from "@/lib/ui";
 import { InboxFilters } from "./filters";
@@ -17,6 +21,11 @@ export default async function InboxPage({
 }) {
   await requireUser();
   const { db } = await getServices();
+  const headerList = await headers();
+  const [secret, origin] = await Promise.all([
+    getSetting(db, SETTING.sessionSecret),
+    getInstanceUrl(db, headerList.get("host")),
+  ]);
 
   const params = await searchParams;
   const search = new URLSearchParams(
@@ -37,6 +46,17 @@ export default async function InboxPage({
     filters.formId || filters.status || filters.search || filters.from || filters.to,
   );
   const showControls = page.items.length > 0 || hasFilters;
+
+  const items = await Promise.all(
+    page.items.map(async (row) => {
+      let confirmUrl: string | null = null;
+      if (row.optedInAt === null && secret && origin) {
+        const token = await signConfirmToken(row.id, secret);
+        confirmUrl = `${origin}${confirmPath(row.id, token.exp, token.sig)}`;
+      }
+      return { row, confirmUrl };
+    }),
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -73,13 +93,13 @@ export default async function InboxPage({
               to get an endpoint.
             </>
           ) : (
-            "No submissions yet. Copy your form's snippet into your site, and submissions will appear here."
+            "No submissions yet. Open a form and copy the HTML, fetch, or React snippet into your site."
           )}
         </p>
       ) : (
         <>
           <ul className="min-h-0 flex-1 overflow-y-auto">
-            {page.items.map((row) => (
+            {items.map(({ row, confirmUrl }) => (
               <SubmissionCard
                 key={row.id}
                 submission={{
@@ -91,6 +111,7 @@ export default async function InboxPage({
                   waitlistPosition: row.waitlistPosition,
                   country: row.country,
                   createdAt: row.createdAt,
+                  confirmUrl,
                 }}
               />
             ))}

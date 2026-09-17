@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import type { Database } from "../db/client";
 import { forms, type Form } from "../db/schema";
 
@@ -52,9 +52,41 @@ export async function loadForm(
   return form;
 }
 
+/** Lookup used by `/p/:slug` — public id or custom slug. */
+export async function loadHostedForm(
+  db: Database,
+  key: string,
+  now: number = Date.now(),
+): Promise<Form | null> {
+  const cacheKey = `hosted:${key}`;
+  const hit = cache.get(cacheKey);
+  if (hit && hit.expiresAt > now) return hit.form;
+
+  const rows = await db
+    .select()
+    .from(forms)
+    .where(or(eq(forms.publicId, key), eq(forms.slug, key)))
+    .limit(1);
+  const form = rows[0] ?? null;
+
+  if (cache.size >= MAX_ENTRIES) {
+    const oldest = cache.keys().next();
+    if (!oldest.done) cache.delete(oldest.value);
+  }
+
+  cache.set(cacheKey, { form, expiresAt: now + TTL_MS });
+  if (form) {
+    cache.set(form.publicId, { form, expiresAt: now + TTL_MS });
+    if (form.slug) cache.set(`hosted:${form.slug}`, { form, expiresAt: now + TTL_MS });
+  }
+  return form;
+}
+
 /** Clear one form from this isolate's cache. Call after any write to it. */
-export function invalidateForm(publicId: string): void {
+export function invalidateForm(publicId: string, slug?: string | null): void {
   cache.delete(publicId);
+  cache.delete(`hosted:${publicId}`);
+  if (slug) cache.delete(`hosted:${slug}`);
 }
 
 /** Clear everything. Used by tests and after bulk changes. */

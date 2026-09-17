@@ -12,10 +12,11 @@ import { authCardClass } from "@/lib/ui";
 export default async function ThanksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ pos?: string; form?: string }>;
+  searchParams: Promise<{ pos?: string; form?: string; pending?: string }>;
 }) {
-  const { pos } = await searchParams;
+  const { pos, pending } = await searchParams;
   const position = pos && /^\d{1,9}$/.test(pos) ? Number(pos) : null;
+  const needsConfirm = pending === "1";
 
   return (
     <div className="min-h-dvh bg-[#f4f6fb] dark:bg-neutral-950">
@@ -24,8 +25,14 @@ export default async function ThanksPage({
       </header>
       <main className="flex justify-center px-6 py-24">
         <div className={`max-w-md text-center ${authCardClass}`}>
-          <h1 className="text-2xl font-semibold tracking-tight">Thanks — we got it.</h1>
-          {position !== null ? (
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {needsConfirm ? "Check your email." : "Thanks — we got it."}
+          </h1>
+          {needsConfirm ? (
+            <p className="mt-3 text-lg text-neutral-600 dark:text-neutral-400">
+              Confirm the link we sent and we&rsquo;ll lock in your spot.
+            </p>
+          ) : position !== null ? (
             <p className="mt-3 text-lg text-neutral-600 dark:text-neutral-400">
               You&rsquo;re <span className="font-semibold text-neutral-950 dark:text-white">#{position}</span>{" "}
               on the list.

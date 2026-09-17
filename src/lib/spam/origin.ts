@@ -44,6 +44,11 @@ export function originAllowed(request: Request, allowedOriginsJson: string): boo
   const normalised = toOrigin(candidate);
   if (!normalised) return false;
 
+  // Hosted pages live on this instance. Posting from our own origin must work even
+  // when the owner allow-listed only their marketing site.
+  const self = originOfUrl(request.url);
+  if (self && toOrigin(self) === normalised) return true;
+
   return allowed.some((entry) => toOrigin(entry) === normalised);
 }
 
