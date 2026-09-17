@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/guard";
 import { forms } from "@/lib/db/schema";
 import { getServices } from "@/lib/env";
-import { parseFields } from "@/lib/submissions/fields";
+import { effectiveFields } from "@/lib/submissions/fields";
 
 export const dynamic = "force-dynamic";
 
@@ -34,9 +34,9 @@ export default async function FormPreviewPage({ params }: { params: Promise<{ fo
   const proto = host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https";
   const endpoint = `${proto}://${host}/f/${form.publicId}`;
 
-  const fields = parseFields(form.fieldsJson).filter((f) => f.type !== "file");
-  const visible =
-    fields.length > 0 ? fields : [{ name: "email", type: "email" as const, required: true }];
+  // Same fields the embed snippet shows, so the owner tests the form their visitors
+  // will actually see.
+  const visible = effectiveFields(form.fieldsJson, form.mode).filter((f) => f.type !== "file");
 
   return (
     <div className="space-y-6">

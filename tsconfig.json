@@ -26,6 +26,9 @@
   "include": [
     "next-env.d.ts",
     "cloudflare-env.d.ts",
+    // Listed explicitly: it augments the global CloudflareEnv interface with optional
+    // bindings, and a bare **/*.ts glob does not reliably pull in a global .d.ts.
+    "src/types/env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",

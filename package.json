@@ -13,7 +13,7 @@
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tests",
+    "typecheck": "tsc --noEmit --incremental false && tsc --noEmit --incremental false -p tests",
     "test": "vitest run",
     "format": "prettier --write .",
     "reset-password": "node scripts/reset-password.mjs",

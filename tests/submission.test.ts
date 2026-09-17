@@ -199,6 +199,35 @@ describe("size limits", () => {
     expect(res.status).toBe(413);
   });
 
+  /**
+   * R2 is opt-in, so an instance without a bucket must refuse files with a message
+   * rather than accept the submission and silently drop the attachment.
+   */
+  it("rejects a file upload when no bucket is bound", async () => {
+    const { publicId } = await seedForm({ fileTypesJson: '["text/plain"]' });
+    const body = new FormData();
+    body.append("email", "a@example.com");
+    body.append("cv", new File(["hello"], "cv.txt", { type: "text/plain" }));
+
+    // Same env, minus the bucket.
+    const noBucket = { ...env, BUCKET: undefined } as unknown as CloudflareEnv;
+
+    const res = await handleSubmission(
+      new Request(`https://forms.test/f/${publicId}`, {
+        method: "POST",
+        body,
+        headers: { accept: "application/json" },
+      }),
+      noBucket,
+      ctx(),
+    );
+
+    expect(res.status).toBe(422);
+    const json = (await res.json()) as { code: string; fields: Record<string, string> };
+    expect(json.code).toBe("validation_failed");
+    expect(json.fields.cv).toMatch(/cannot accept files/i);
+  });
+
   it("rejects a disallowed file type", async () => {
     const { publicId } = await seedForm({ fileTypesJson: '["application/pdf"]' });
     const body = new FormData();

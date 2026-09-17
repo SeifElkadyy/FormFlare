@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { r2Storage } from "../src/lib/platform/storage";
 import { cloudflareQueue } from "../src/lib/platform/queue";
 import { cloudflareMailer, unavailableMailer } from "../src/lib/platform/mailer";
+import { unavailableStorage } from "../src/lib/platform/storage";
 import { servicesFrom } from "../src/lib/env";
 
 describe("r2Storage", () => {
@@ -32,6 +33,38 @@ describe("r2Storage", () => {
     await env.BUCKET.put("test/raw.bin", new TextEncoder().encode("x"));
     const got = await storage.get("test/raw.bin");
     expect(got!.contentType).toBe("application/octet-stream");
+  });
+});
+
+describe("storage availability", () => {
+  /**
+   * R2 is opt-in: activating it requires a payment method on the Cloudflare account even
+   * within the free tier, so the default deploy has no bucket and the app must stay
+   * usable without one.
+   */
+  it("reports unavailable with no bucket bound", () => {
+    const storage = r2Storage(undefined);
+    expect(storage.available).toBe(false);
+    expect(storage).toBe(unavailableStorage);
+  });
+
+  it("reports available when a bucket is bound", () => {
+    expect(r2Storage(env.BUCKET).available).toBe(true);
+  });
+
+  /** Reads and deletes are no-ops: with no bucket there is genuinely nothing there. */
+  it("returns null and deletes silently without a bucket", async () => {
+    const storage = r2Storage(undefined);
+    await expect(storage.get("anything")).resolves.toBeNull();
+    await expect(storage.delete("anything")).resolves.toBeUndefined();
+  });
+
+  /** Only put throws — a guard against a caller that skipped the availability check. */
+  it("throws on put without a bucket", async () => {
+    const storage = r2Storage(undefined);
+    await expect(
+      storage.put("k", new TextEncoder().encode("x").buffer, "text/plain"),
+    ).rejects.toThrow(/R2 bucket/i);
   });
 });
 

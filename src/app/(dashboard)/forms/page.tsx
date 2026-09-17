@@ -26,7 +26,8 @@ export default async function FormsPage() {
 
       {rows.length === 0 ? (
         <p className="rounded-lg border border-black/[.08] p-6 text-sm text-zinc-600 dark:border-white/[.145] dark:text-zinc-400">
-          No forms yet. Create one above to get your first endpoint.
+          No forms yet. Name one above and press <strong>Create form</strong> — you will get an
+          endpoint and a snippet to paste into your site.
         </p>
       ) : (
         <ul className="space-y-3">

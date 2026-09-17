@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { forms } from "@/lib/db/schema";
 import { getServices } from "@/lib/env";
 import { parseOrigins } from "@/lib/spam/origin";
+import { effectiveFields } from "@/lib/submissions/fields";
 import { FormSettings } from "./form-settings";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ export const dynamic = "force-dynamic";
 export default async function FormDetailPage({ params }: { params: Promise<{ formId: string }> }) {
   await requireUser();
   const { formId } = await params;
-  const { db } = await getServices();
+  const { db, storage } = await getServices();
 
   const rows = await db.select().from(forms).where(eq(forms.id, formId)).limit(1);
   const form = rows[0];
@@ -43,7 +44,7 @@ export default async function FormDetailPage({ params }: { params: Promise<{ for
       <section className="space-y-2">
         <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Embed</h2>
         <pre className="overflow-x-auto rounded-lg border border-black/[.08] p-4 text-xs dark:border-white/[.145]">
-          <code>{embedSnippet(endpoint, form.honeypotField, form.mode)}</code>
+          <code>{embedSnippet(endpoint, form.honeypotField, form.mode, form.fieldsJson)}</code>
         </pre>
       </section>
 
@@ -60,19 +61,33 @@ export default async function FormDetailPage({ params }: { params: Promise<{ for
           autoReplyEnabled: form.autoReplyEnabled,
           autoReplySubject: form.autoReplySubject,
           autoReplyBody: form.autoReplyBody,
+          uploadsAvailable: storage.available,
         }}
       />
     </div>
   );
 }
 
-function embedSnippet(endpoint: string, honeypot: string, mode: string): string {
-  const fields =
-    mode === "waitlist"
-      ? `  <input name="email" type="email" required />`
-      : `  <input name="name" required />
-  <input name="email" type="email" required />
-  <textarea name="message" required></textarea>`;
+function embedSnippet(
+  endpoint: string,
+  honeypot: string,
+  mode: string,
+  fieldsJson: string,
+): string {
+  // Built from the same field list the preview renders, so the snippet and the preview
+  // can never drift apart.
+  const fields = effectiveFields(fieldsJson, mode)
+    .filter((f) => f.type !== "file")
+    .map((field) => {
+      const required = field.required ? " required" : "";
+      if (field.type === "textarea") {
+        return `  <textarea name="${field.name}"${required}></textarea>`;
+      }
+      const type =
+        field.type === "email" ? ' type="email"' : field.type === "number" ? ' type="number"' : "";
+      return `  <input name="${field.name}"${type}${required} />`;
+    })
+    .join("\n");
 
   return `<form action="${endpoint}" method="POST">
   <!-- Hidden from people, filled by bots. Leave it in. -->

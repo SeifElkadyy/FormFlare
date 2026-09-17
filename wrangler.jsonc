@@ -6,6 +6,16 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "keep_vars": true,
 
+  // Set explicitly rather than relying on the default. A fresh account deployed via the
+  // button came up with no workers.dev URL at all, which leaves a deployer with a
+  // Worker they cannot reach and no obvious fix.
+  "workers_dev": true,
+
+  // Preview URLs are public and hit the *same* D1 database as production, so an older
+  // version would stay reachable — with real submissions — on a URL that never expires
+  // and misses later fixes. Not worth it for an app holding other people's form data.
+  "preview_urls": false,
+
   "assets": {
     "binding": "ASSETS",
     "directory": ".open-next/assets"
@@ -22,7 +32,15 @@
     }
   ],
 
-  "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "formflare-uploads" }],
+  // No r2_buckets entry on purpose.
+  //
+  // Activating R2 requires a payment method on the Cloudflare account, even to stay
+  // inside the free tier — so listing it here makes the Deploy button demand a card
+  // before anyone can finish, for a feature most forms never use.
+  //
+  // File uploads are therefore opt-in: add a BUCKET binding yourself and redeploy, and
+  // the app picks it up automatically. Everything else (forms, waitlists, webhooks,
+  // email, exports) works without it. See docs/deployment.md.
 
   "queues": {
     "producers": [{ "binding": "JOBS", "queue": "formflare-jobs" }],

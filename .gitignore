@@ -47,3 +47,6 @@ next-env.d.ts
 
 # Holds an account-specific D1 id; copy from wrangler.dev.example.jsonc
 wrangler.dev.jsonc
+
+# tsc incremental cache (stale copies mask type-augmentation changes)
+*.tsbuildinfo

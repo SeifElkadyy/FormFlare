@@ -1,4 +1,5 @@
 import { deleteSubmissionAction, setStatusAction } from "./actions";
+import { LocalTime } from "./local-time";
 
 interface Props {
   submission: {
@@ -22,7 +23,6 @@ const STATUS_LABEL: Record<string, string> = {
 
 export function SubmissionCard({ submission }: Props) {
   const data = safeParse(submission.dataJson);
-  const timestamp = new Date(submission.createdAt).toISOString().replace("T", " ").slice(0, 19);
 
   return (
     <li className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]">
@@ -47,7 +47,7 @@ export function SubmissionCard({ submission }: Props) {
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <p className="text-xs text-zinc-600 dark:text-zinc-400">
-          <time dateTime={new Date(submission.createdAt).toISOString()}>{timestamp} UTC</time>
+          <LocalTime timestamp={submission.createdAt} />
           {submission.country && ` · ${submission.country}`}
         </p>
 

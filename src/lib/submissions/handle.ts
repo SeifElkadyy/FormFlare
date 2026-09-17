@@ -100,6 +100,16 @@ export async function handleSubmission(
     return errorResponse(request, form, "validation_failed", validation.errors);
   }
 
+  // R2 is opt-in, so an instance without a bucket cannot accept files. Reject clearly
+  // rather than dropping them silently — a submitter who attached a CV should be told
+  // it did not arrive.
+  if (parsed.files.length > 0 && !r2Storage(env.BUCKET).available) {
+    return errorResponse(request, form, "validation_failed", {
+      [parsed.files[0].fieldName]:
+        "This form cannot accept files. The site owner needs to enable file uploads.",
+    });
+  }
+
   for (const file of parsed.files) {
     if (file.size > form.fileMaxBytes) return errorResponse(request, form, "payload_too_large");
     const allowed = parseJsonArray(form.fileTypesJson);

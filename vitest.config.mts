@@ -16,6 +16,11 @@ export default defineConfig({
     cloudflareTest({
       wrangler: { configPath: "./wrangler.jsonc" },
       miniflare: {
+        // R2 is opt-in in production (activating it needs a payment method), so
+        // wrangler.jsonc has no bucket. Tests bind one anyway, because the upload,
+        // download, delete and orphan-sweep paths all have to be exercised — they are
+        // the code that runs for owners who *have* added a bucket.
+        r2Buckets: ["BUCKET"],
         bindings: {
           TEST_MIGRATIONS: migrations,
           // Worker sandboxes get an empty process.env, so opt-in flags have to be

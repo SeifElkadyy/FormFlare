@@ -51,11 +51,14 @@ async function checkDatabase(env: CloudflareEnv): Promise<SystemCheck> {
 
 async function checkBucket(env: CloudflareEnv): Promise<SystemCheck> {
   if (!env.BUCKET) {
+    // Optional, not broken. R2 activation requires a payment method on the Cloudflare
+    // account even within the free tier, so the default deploy ships without it and
+    // everything except file uploads works.
     return {
-      name: "File storage (R2)",
-      status: "fail",
-      detail: "The BUCKET binding is missing.",
-      fix: "Add an r2_buckets entry named BUCKET in wrangler.jsonc, then redeploy.",
+      name: "File storage (R2) — optional",
+      status: "warn",
+      detail: "Not configured. Forms work; file uploads are unavailable.",
+      fix: "To accept uploads: enable R2 in the Cloudflare dashboard, create a bucket, add it to wrangler.jsonc as BUCKET, and redeploy. Enabling R2 requires a payment method even on the free tier.",
     };
   }
 

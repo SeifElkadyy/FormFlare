@@ -19,8 +19,15 @@ import { spawnSync } from "node:child_process";
 /** Cloudflare's actual limit, for reference in the output. */
 const PLATFORM_LIMIT_MIB = 64;
 
-/** Our own ceiling. Roughly 2x the current size: room to grow, tight enough to notice. */
-const MAX_UNCOMPRESSED_KIB = 14_000;
+/**
+ * Our own ceiling, well under the platform's 64 MiB.
+ *
+ * Raised from 14,000 once Phase 5 took the bundle to ~8,600 KiB: route count went from
+ * 5 to 12, and each App Router page pulls its own SSR chunk. That is our code growing as
+ * intended, not a regression — but it left only 38% headroom, which would have started
+ * false-alarming on the next feature.
+ */
+const MAX_UNCOMPRESSED_KIB = 20_000;
 
 /** Free-plan asset-count limit is 20,000; warn well before that. */
 const MAX_ASSETS = 5_000;

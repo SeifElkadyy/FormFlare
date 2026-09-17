@@ -932,6 +932,101 @@ allowlist that silences everything would be worse than no scanner.
 preserved on the local `history-backup` branch, which was deliberately **not** pushed.
 The tree was verified byte-identical between the two before switching.
 
+---
+
+## 2026-09-17 — Deploy button test findings
+
+A real deploy on a **fresh Cloudflare account** found things no local test could.
+
+### R2 requires a payment card — so it is now optional
+
+Activating R2 requires a payment method **even to stay inside its free tier**
+([confirmed in Cloudflare's docs and community threads](https://developers.cloudflare.com/r2/pricing/)).
+Because `wrangler.jsonc` listed an `r2_buckets` entry, the Deploy page **blocked the
+deploy** until the card was added. That contradicts "runs free on your own Cloudflare
+account" and is a hard stop at the first screen, for a feature most contact forms and
+waitlists never use.
+
+`wrangler.jsonc` now has **no R2 binding**. File uploads are opt-in:
+
+- `Storage` gained an `available` flag; `r2Storage(undefined)` returns an
+  `unavailableStorage` whose reads and deletes are no-ops (nothing was ever stored) and
+  whose `put` throws as a guard against a missed check.
+- The submission handler rejects files with a clear message rather than accepting the
+  submission and silently dropping the attachment.
+- `/setup` shows R2 as ⚠️ **optional**, not ❌, and the fix text mentions the card.
+- Form settings warn when a file field cannot work.
+- The daily orphan sweep is skipped entirely without a bucket.
+
+The Phase 1 platform-adapter layer is what made this a contained change: business logic
+depends on `Storage`, never `env.BUCKET`.
+
+`BUCKET` is declared optional in `src/types/env.d.ts`; tests bind a real bucket through
+`vitest.config.mts`, because the upload paths still have to be exercised for owners who
+do add one.
+
+### `workers_dev` and `preview_urls` are now explicit
+
+**`workers_dev: true`** — the documented default is already `true`, but the fresh account
+came up with the subdomain **disabled and no URL at all**, leaving a deployer with an
+unreachable Worker and no obvious fix. Never rely on that default again.
+
+**`preview_urls: false`** — preview URLs are public and hit the **same D1 database** as
+production. An older version of an instance would stay reachable, serving real
+submissions, on a URL that never expires and misses later fixes. Not acceptable for an
+app holding other people's form data.
+
+### Preview and the embed snippet disagreed
+
+A new standard form stores `fields_json: "[]"`, and the preview page and the embed
+snippet each had their **own hardcoded fallback** — the snippet showed name/email/message,
+the preview only email. No data was lost (the preview never asked for the other fields),
+but an owner testing their form saw a different form from the one their visitors get.
+
+Both now derive from `effectiveFields()` in `src/lib/submissions/fields.ts`, so they
+cannot drift again.
+
+### Bundle growth was our own code
+
+8,596 KiB, up from 6,537. Reproduced locally, so not a deploy artefact: the earlier
+figure predated Phase 5, and route count went **5 → 12** — each App Router page pulls its
+own SSR chunk. Framework files are unchanged. Still 13% of the 64 MiB limit with 35 ms
+startup, but the CI ceiling was raised 14,000 → 20,000 KiB, since 38% headroom would have
+started false-alarming on the next feature.
+
+### Not bugs
+
+- **Worker name prefilled as "FormFlare"** — Cloudflare derives the default from the
+  _repository_ name, not our config, which correctly says lowercase `formflare`.
+- **Node DEP0190** — fires on `spawn` with `shell: true` plus an args array. Neither of
+  our scripts passes `shell: true`, neither runs during a Cloudflare deploy, and our
+  build emits zero occurrences. It comes from Cloudflare's build tooling.
+
+### `typecheck` no longer uses incremental builds
+
+While making `BUCKET` optional, `tsc` reported errors that vanished and reappeared
+depending on cached state — `incremental: true` was serving a stale type graph that
+predated the augmentation.
+
+Two fixes: `typecheck` now passes `--incremental false` so results are deterministic, and
+`tests/tsconfig.json` explicitly includes `../src/types/env.d.ts` — it already included
+`cloudflare-env.d.ts`, so the augmentation was missing whenever tests pulled in app files.
+`*.tsbuildinfo` is gitignored.
+
+> Worth remembering: a type error that comes and goes between identical runs is a caching
+> artefact, not a type error. Chasing the symptom wasted several cycles here.
+
+### UI
+
+- Inbox timestamps show the **viewer's local time**, with UTC in the tooltip. Implemented
+  with `useSyncExternalStore` rather than `useEffect` + `setState`: the server cannot know
+  the viewer's timezone, and this is React's supported way to return a different value per
+  side without a hydration mismatch or a second render.
+- Filters and export buttons are **hidden until the first submission** — five controls
+  that narrow nothing are noise on an empty inbox — and reappear whenever a filter is
+  active so it can always be cleared.
+- The empty inbox links to **Create your first form** when no form exists yet.
+
 ### Deferred work (agreed 2026-09-17)
 
 - [x] **R2 cleanup on delete** — done in Phase 3 (`src/lib/submissions/delete.ts`).

@@ -18,6 +18,8 @@ interface Props {
     autoReplyEnabled: boolean;
     autoReplySubject: string | null;
     autoReplyBody: string | null;
+    /** False when no R2 bucket is bound, so file fields cannot work. */
+    uploadsAvailable: boolean;
   };
 }
 
@@ -102,6 +104,15 @@ export function FormSettings({ form }: Props) {
             One per line. Needs Cloudflare Email Sending; the app works without it.
           </p>
         </div>
+
+        {!form.uploadsAvailable && (
+          <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
+            File uploads are off. This instance has no R2 bucket, so a form with a file field will
+            reject the upload. To enable it: turn on R2 in the Cloudflare dashboard, create a
+            bucket, bind it as <code>BUCKET</code> in <code>wrangler.jsonc</code>, and redeploy.
+            Cloudflare asks for a payment method to activate R2, even on the free tier.
+          </p>
+        )}
 
         <fieldset className="space-y-2 rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]">
           <legend className="px-1 text-sm font-medium">Auto-reply</legend>

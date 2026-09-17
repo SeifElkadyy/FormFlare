@@ -52,15 +52,19 @@ export async function runDailyMaintenance(env: CloudflareEnv): Promise<void> {
     console.error("maintenance: failed to prune delivery logs", err);
   }
 
-  try {
-    // Catches objects stranded by a crash between the R2 put and the D1 insert; the
-    // delete paths handle the normal case.
-    const result = await sweepOrphanedObjects(db, env.BUCKET);
-    if (result.deleted > 0) {
-      console.log(`maintenance: removed ${result.deleted} orphaned object(s)`);
+  // Only when a bucket is bound. R2 is opt-in, and with no bucket there is nothing to
+  // sweep — the submissions table cannot reference objects that were never stored.
+  if (env.BUCKET) {
+    try {
+      // Catches objects stranded by a crash between the R2 put and the D1 insert; the
+      // delete paths handle the normal case.
+      const result = await sweepOrphanedObjects(db, env.BUCKET);
+      if (result.deleted > 0) {
+        console.log(`maintenance: removed ${result.deleted} orphaned object(s)`);
+      }
+    } catch (err) {
+      console.error("maintenance: orphan sweep failed", err);
     }
-  } catch (err) {
-    console.error("maintenance: orphan sweep failed", err);
   }
 }
 

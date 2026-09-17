@@ -36,34 +36,51 @@ export default async function InboxPage({
     filters.formId || filters.status || filters.search || filters.from || filters.to,
   );
 
+  // Filters and exports are noise on an empty inbox: with nothing to narrow down they
+  // are five controls that do nothing. They appear as soon as the first submission does,
+  // and stay visible while a filter is active so it can always be cleared.
+  const showControls = page.items.length > 0 || hasFilters;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold tracking-tight">Inbox</h1>
 
-        <div className="flex items-center gap-3 text-sm">
-          <a
-            href={`/api/export?format=csv&${exportParams}`}
-            className="rounded-md border border-black/[.12] px-3 py-1.5 hover:bg-black/[.04] focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-white/[.18] dark:hover:bg-white/[.06]"
-          >
-            Export CSV
-          </a>
-          <a
-            href={`/api/export?format=json&${exportParams}`}
-            className="rounded-md border border-black/[.12] px-3 py-1.5 hover:bg-black/[.04] focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-white/[.18] dark:hover:bg-white/[.06]"
-          >
-            JSON
-          </a>
-        </div>
+        {showControls && (
+          <div className="flex items-center gap-3 text-sm">
+            <a
+              href={`/api/export?format=csv&${exportParams}`}
+              className="rounded-md border border-black/[.12] px-3 py-1.5 hover:bg-black/[.04] focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-white/[.18] dark:hover:bg-white/[.06]"
+            >
+              Export CSV
+            </a>
+            <a
+              href={`/api/export?format=json&${exportParams}`}
+              className="rounded-md border border-black/[.12] px-3 py-1.5 hover:bg-black/[.04] focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-white/[.18] dark:hover:bg-white/[.06]"
+            >
+              JSON
+            </a>
+          </div>
+        )}
       </div>
 
-      <InboxFilters forms={formRows} current={params} />
+      {showControls && <InboxFilters forms={formRows} current={params} />}
 
       {page.items.length === 0 ? (
         <p className="rounded-lg border border-black/[.08] p-6 text-sm text-zinc-600 dark:border-white/[.145] dark:text-zinc-400">
-          {hasFilters
-            ? "No submissions match these filters."
-            : "No submissions yet. Create a form to get an endpoint, then paste the snippet into your site."}
+          {hasFilters ? (
+            "No submissions match these filters."
+          ) : formRows.length === 0 ? (
+            <>
+              No submissions yet — and no forms to receive them.{" "}
+              <Link href="/forms" className="font-medium underline">
+                Create your first form
+              </Link>{" "}
+              to get an endpoint.
+            </>
+          ) : (
+            "No submissions yet. Copy your form's snippet into your site, and submissions will appear here."
+          )}
         </p>
       ) : (
         <>

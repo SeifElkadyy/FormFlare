@@ -13,7 +13,8 @@ Forms and waitlists for any website — self-hosted on your own Cloudflare accou
 - Block spam with honeypots, rate limits and Cloudflare Turnstile
 - Email alerts and auto-replies
 - Signed webhooks to n8n, Slack, or any URL
-- File uploads, search, CSV export
+- Search and CSV export
+- File uploads (optional — needs R2, see below)
 - All data stays in your own D1 database and R2 bucket
 
 ## How it works
@@ -86,9 +87,37 @@ deleting a form can take that long to apply everywhere.
 
 ### Does it work on the Cloudflare free plan?
 
-Forms, waitlists, storage and webhooks do. Email alerts to arbitrary recipients and
-auto-replies need Cloudflare Email Sending on the Workers Paid plan. Sending to verified
-destination addresses in your own account is free.
+Yes, and it deploys without a payment method. Forms, waitlists, spam protection,
+webhooks, search and exports all run on the free tier.
+
+Two features need more:
+
+- **File uploads** need R2. Cloudflare requires a payment method to activate R2 **even to
+  stay inside its free tier**, so FormFlare ships without it — the Deploy button never
+  asks. See "How do I enable file uploads?" below.
+- **Email alerts to arbitrary recipients** and auto-replies need Cloudflare Email Sending
+  on the Workers Paid plan. Sending to verified destination addresses in your own account
+  is free.
+
+Without either, forms still work: submissions land in the dashboard and fire webhooks.
+
+### How do I enable file uploads?
+
+FormFlare deploys with no R2 bucket, because activating R2 requires a card on file. A
+form with a file field will reject uploads with a clear message until you add one.
+
+1. Cloudflare dashboard → **R2** → **Enable R2** (this asks for a payment method).
+2. **Create bucket** — call it `formflare-uploads`.
+3. Add it to `wrangler.jsonc`:
+
+   ```jsonc
+   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "formflare-uploads" }]
+   ```
+
+4. Commit and push. Workers Builds redeploys, and `/setup` shows R2 as configured.
+
+The free tier covers 10 GB of storage and 1M writes per month, which is far more than a
+form backend uses — but the card is required regardless.
 
 ### Is the rate limiting a hard guarantee?
 

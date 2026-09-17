@@ -24,6 +24,34 @@ export function parseFields(json: string): FieldConfig[] {
   }
 }
 
+/**
+ * Fields a form starts with when the owner has not configured any.
+ *
+ * One source of truth, because the preview page and the embed snippet must agree: if
+ * the snippet shows name/email/message but the preview only shows email, the owner
+ * tests a different form from the one their visitors will see.
+ *
+ * A form with no configured fields still accepts anything — this only decides what the
+ * UI offers, not what the endpoint allows.
+ */
+export function defaultFields(mode: "standard" | "waitlist"): FieldConfig[] {
+  return mode === "waitlist"
+    ? [{ name: "email", type: "email", required: true }]
+    : [
+        { name: "name", type: "text", required: true },
+        { name: "email", type: "email", required: true },
+        { name: "message", type: "textarea", required: true },
+      ];
+}
+
+/** The fields to show for a form: its own if configured, otherwise the defaults. */
+export function effectiveFields(fieldsJson: string, mode: string): FieldConfig[] {
+  const configured = parseFields(fieldsJson);
+  return configured.length > 0
+    ? configured
+    : defaultFields(mode === "waitlist" ? "waitlist" : "standard");
+}
+
 /** Default cap on any single text value, so one field cannot carry a megabyte. */
 const DEFAULT_MAX_LENGTH = 5000;
 
