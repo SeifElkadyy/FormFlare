@@ -5,6 +5,38 @@ Format: date — what — why.
 
 ---
 
+## Current state (2026-09-17)
+
+**v0.1.0 is released and public.** MIT. Repo: https://github.com/SeifElkadyy/FormFlare
+— annotated tag `v0.1.0` on `main` (`d137ae8`), release notes at
+https://github.com/SeifElkadyy/FormFlare/releases/tag/v0.1.0.
+
+Phases **0–6 are done**. That is the v1 product from the plan: Deploy to Cloudflare
+button, `/setup` wizard, projects/forms, `POST /f/:publicId`, waitlists, spam layers,
+Queues (email + webhooks), dashboard, REST API, and `scripts/check-update.mjs` for
+cloned copies. R2 is optional so the button never asks for a payment card. Email
+Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
+`wrangler.jsonc`.
+
+**Open** (not blockers for v0.1.0): see **Next up**.
+
+## Next up
+
+- **README screenshot** — inbox + form settings. Noted as a TODO in the README; there is
+  no `public/screenshot.png` yet.
+- **v0.2.0 in-app update banner** — Cloudflare strips `.github/` when cloning, so
+  deployers never get the update workflow. The banner is how they find out a release
+  exists without reading the README.
+- **Optional Email Sending setup** — same shape as the R2 opt-in: document how to enable
+  owner alerts and auto-replies without making the binding required to deploy.
+- **v2 from the plan** — Workers AI spam scoring; waitlist double opt-in, referrals and
+  public count badge; hosted form pages and embed widget; Slack/Discord/Telegram
+  presets; n8n/Zapier templates; per-form analytics; tags, notes and a lead pipeline;
+  scheduled D1 → R2 backups and GDPR delete-by-email; TypeScript SDK and React
+  component; team members and roles.
+
+---
+
 ## 2026-09-17 — Phase 0
 
 ### Verified against current docs (plan asked for confirmation)
@@ -1033,14 +1065,16 @@ Two fixes: `typecheck` now passes `--incremental false` so results are determini
 - [x] **Daily orphan sweep** — done in Phase 3, wired into `runDailyMaintenance`.
 - [x] **Queue consumer email rules** — done in Phase 4.
 
-### Open
+### Resolved at v0.1.0
 
-- [ ] **License undecided.** No `LICENSE` file yet, by instruction. AGPL-3.0 vs MIT to be
-      chosen before Phase 7 / launch.
-- [ ] Confirm the deploy button does not prompt for secrets given a fully commented
-      `.dev.vars.example` (verify in Phase 6; if it prompts, delete the file and document
-      local dev vars in `docs/deployment.md` instead).
-- [ ] Re-check pricing claims before release.
+- [x] **License.** MIT (`LICENSE`). Chosen before launch, as the plan required.
+- [x] **Deploy button does not prompt for secrets.** Verified on a fresh Cloudflare
+      free account: no payment method, no API tokens. `.dev.vars.example` is fully
+      commented (`SETUP_TOKEN` stays opt-in and commented). File kept.
+- [x] **Pricing claims rechecked for release.** README and the v0.1.0 notes: free plan
+      with no card; R2 needs a card even on its free tier (so it is optional); email to
+      arbitrary recipients needs Email Sending on Workers Paid; verified destinations
+      are free.
 
 ## 2026-09-17 — Update path for deployed copies
 
