@@ -77,7 +77,7 @@ This is the part that makes the project feel magical. It is mostly configuration
 Put this in the README (must be a **public** GitHub or GitLab repo):
 
 ```md
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/SeifElkadyy/formflare)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/SeifElkadyy/FormFlare)
 ```
 
 ### 2.2 What Cloudflare does when a user clicks it
@@ -1131,7 +1131,7 @@ Acceptance
 
 Forms and waitlists for any website — self-hosted on your own Cloudflare account.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/SeifElkadyy/formflare)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/SeifElkadyy/FormFlare)
 
 ![Formflare dashboard](./public/screenshot.png)
 
