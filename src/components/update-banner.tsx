@@ -32,7 +32,7 @@ export function UpdateBanner({
   if (!visible) return null;
 
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-blue-100 bg-blue-50 px-4 py-2 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+    <div className="flex items-center justify-between gap-3 border-b border-flare/20 bg-flare-soft px-4 py-2 text-sm text-ink dark:text-mist">
       <p>
         FormFlare {latest} is available.{" "}
         <a href="/settings#updates" className="font-medium underline">

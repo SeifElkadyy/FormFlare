@@ -19,7 +19,7 @@ export default async function ThanksPage({
   const needsConfirm = pending === "1";
 
   return (
-    <div className="min-h-dvh bg-[#f4f6fb] dark:bg-neutral-950">
+    <div className="min-h-dvh bg-mist dark:bg-ink">
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center px-4 sm:px-6">
         <BrandMark href="/" />
       </header>

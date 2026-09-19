@@ -84,7 +84,7 @@ export function HomeView({
                   href={item.href}
                   className="press surface flex h-full flex-col rounded-2xl p-4 no-underline"
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-flare-soft text-ink dark:text-mist">
                     <Icon />
                   </span>
                   <span className="mt-3 text-sm font-medium text-neutral-950 dark:text-white">
@@ -158,7 +158,7 @@ export function HomeView({
                     className="row-hover surface flex items-center gap-3 rounded-2xl p-3 no-underline"
                   >
                     <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sm font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-200"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-flare-soft text-sm font-semibold text-ink dark:text-mist"
                       aria-hidden
                     >
                       {(form.name.trim()[0] ?? "F").toUpperCase()}
@@ -211,7 +211,7 @@ export function HomeView({
                     className="row-hover surface flex items-center gap-3 rounded-2xl p-3 no-underline"
                   >
                     <span
-                      className={`size-2 shrink-0 rounded-full ${row.status === "new" ? "bg-blue-600" : "bg-neutral-300 dark:bg-neutral-600"}`}
+                      className={`size-2 shrink-0 rounded-full ${row.status === "new" ? "bg-flare" : "bg-neutral-300 dark:bg-neutral-600"}`}
                       aria-hidden
                     />
                     <span className="min-w-0 flex-1">
@@ -240,7 +240,7 @@ function InsightCard({ insight }: { insight: HomeInsight }) {
       ? "bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100"
       : insight.tone === "success"
         ? "bg-emerald-50 text-emerald-950 dark:bg-emerald-950/40 dark:text-emerald-100"
-        : "bg-blue-50 text-blue-950 dark:bg-blue-950/40 dark:text-blue-100";
+        : "bg-flare-soft text-ink dark:text-mist";
 
   const cta = insight.tone === "warning" ? btnSecondary : btnPrimary;
 

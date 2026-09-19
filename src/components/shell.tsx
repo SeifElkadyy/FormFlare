@@ -54,7 +54,7 @@ export function DashboardShell({
   const initial = (email.trim()[0] ?? "F").toUpperCase();
 
   return (
-    <div className="flex h-dvh gap-3 bg-[#f4f6fb] p-3 dark:bg-neutral-950">
+    <div className="flex h-dvh gap-3 bg-mist p-3 dark:bg-ink">
       <aside className="hidden min-h-0 w-56 shrink-0 flex-col lg:flex">
         <SidebarNav email={email} initial={initial} pathname={pathname} />
       </aside>
@@ -67,7 +67,7 @@ export function DashboardShell({
             aria-label="Close menu"
             onClick={() => setOpen(false)}
           />
-          <aside className="relative z-50 h-full w-64 overflow-y-auto bg-[#f4f6fb] p-3 dark:bg-neutral-950">
+          <aside className="relative z-50 h-full w-64 overflow-y-auto bg-mist p-3 dark:bg-ink">
             <div className="mb-2 flex justify-end">
             <button
                 type="button"
@@ -159,7 +159,7 @@ function SidebarNav({
                   className={cn(
                     "flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm no-underline",
                     active
-                      ? "bg-white font-medium text-blue-700 shadow-[var(--shadow-border)] dark:bg-neutral-800 dark:text-blue-200"
+                      ? "bg-flare-soft font-medium text-ink shadow-[var(--shadow-border)] dark:bg-flare-soft dark:text-mist"
                       : "row-hover text-neutral-600 dark:text-neutral-300",
                   )}
                   aria-current={active ? "page" : undefined}
@@ -178,7 +178,7 @@ function SidebarNav({
       <div className="rounded-2xl bg-white p-2 shadow-[var(--shadow-border)] dark:bg-neutral-900">
         <div className="flex items-center gap-2 px-1 py-1">
           <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-xs font-semibold text-white"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-flare text-xs font-semibold text-ink"
             aria-hidden
           >
             {initial}
@@ -252,7 +252,7 @@ function ShellSearch() {
 
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-dvh bg-[#f4f6fb] text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+    <div className="min-h-dvh bg-mist text-ink dark:bg-ink dark:text-mist">
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <BrandMark href="/" />
         <div className="flex items-center gap-3">

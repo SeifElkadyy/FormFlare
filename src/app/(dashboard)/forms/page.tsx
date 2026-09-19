@@ -47,7 +47,7 @@ export default async function FormsPage({
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sm font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-200"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-flare-soft text-sm font-semibold text-ink dark:text-mist"
                       aria-hidden
                     >
                       {initial}

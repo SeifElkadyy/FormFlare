@@ -87,7 +87,7 @@ export default async function InboxPage({
           ) : formRows.length === 0 ? (
             <>
               No submissions yet — and no forms to receive them.{" "}
-              <Link href="/forms?new=1" className="font-medium text-blue-700 underline">
+              <Link href="/forms?new=1" className="font-medium text-ink underline decoration-flare underline-offset-2">
                 Create your first form
               </Link>{" "}
               to get an endpoint.

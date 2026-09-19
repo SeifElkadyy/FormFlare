@@ -27,7 +27,7 @@ export default async function HostedFormPage({
   const framed = embed === "1";
 
   return (
-    <div className={framed ? "min-h-0 bg-white p-4 dark:bg-neutral-950" : "min-h-dvh bg-[#f4f6fb] dark:bg-neutral-950"}>
+    <div className={framed ? "min-h-0 bg-white p-4 dark:bg-ink" : "min-h-dvh bg-mist dark:bg-ink"}>
       {framed ? null : (
         <header className="mx-auto flex h-16 w-full max-w-6xl items-center px-4 sm:px-6">
           <BrandMark href="/" />

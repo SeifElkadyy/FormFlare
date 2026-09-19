@@ -125,7 +125,7 @@ export function FieldEditor({
                       type="checkbox"
                       checked={Boolean(field.required)}
                       onChange={(event) => update(index, { required: event.target.checked })}
-                      className="accent-blue-600"
+                      className="accent-flare"
                     />
                     Required
                   </label>

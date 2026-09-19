@@ -48,7 +48,7 @@ export default async function Home() {
   const secondaryLabel = configured ? "Open dashboard" : "Log in";
 
   return (
-    <div className="min-h-dvh bg-[#f4f6fb] text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+    <div className="min-h-dvh bg-mist text-ink dark:bg-ink dark:text-mist">
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <BrandMark href="/" />
         <div className="flex items-center gap-3">
@@ -68,7 +68,7 @@ export default async function Home() {
       <main>
         <section className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-4 pb-16 pt-10 sm:px-6 lg:grid-cols-[1fr_1.15fr] lg:pt-20">
           <div className="hero-enter max-w-xl">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-800 dark:bg-blue-950/50 dark:text-blue-200">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-flare-soft px-3 py-1 text-sm font-medium text-ink dark:text-mist">
               <ShieldCheckIcon />
               Runs on your Cloudflare account
             </div>
@@ -90,7 +90,7 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="flex min-h-[440px] overflow-hidden rounded-[20px] bg-[#f4f6fb] p-2 shadow-[var(--shadow-border)] dark:bg-neutral-950">
+          <div className="flex min-h-[440px] overflow-hidden rounded-[20px] bg-mist p-2 shadow-[var(--shadow-border)] dark:bg-ink">
             <aside className="hidden w-44 shrink-0 flex-col pr-3 sm:flex">
               <div className="mb-4 px-1 text-sm font-semibold text-neutral-800 dark:text-neutral-100">
                 {BRAND.name}
@@ -112,7 +112,7 @@ export default async function Home() {
                     key={item.label}
                     className={`mb-0.5 flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm ${
                       item.active
-                        ? "bg-white font-medium text-blue-700 shadow-[var(--shadow-border)]"
+                        ? "bg-flare-soft font-medium text-ink shadow-[var(--shadow-border)] dark:text-mist"
                         : "text-neutral-600"
                     }`}
                   >
@@ -157,7 +157,7 @@ export default async function Home() {
               <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
                 {PREVIEW.map((row) => (
                   <div key={row.sender} className="flex items-start gap-3 px-5 py-3.5">
-                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-600" />
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-flare" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-50">
                         {row.sender}
@@ -166,7 +166,7 @@ export default async function Home() {
                         {row.form} — {row.preview}
                       </p>
                     </div>
-                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                    <span className="rounded-full bg-flare-soft px-2 py-0.5 text-[11px] font-medium text-ink dark:text-mist">
                       {row.badge}
                     </span>
                   </div>

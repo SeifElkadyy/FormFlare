@@ -21,12 +21,33 @@ Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
 
 ## Next up
 
-- **README screenshot / demo GIF / live demo** — waiting on final brand (logo, colour,
-  theme). Do not shoot the current UI for launch assets.
+- **README screenshot / demo GIF / live demo** — palette is in (Ink, Flare, Mist,
+  Slate). Still waiting on a dedicated capture pass; do not shoot until the
+  flame lockup and dashboard are the look we want to freeze.
 - **Later from the plan** — Workers AI spam scoring; Telegram presets; n8n/Zapier
   templates; per-form analytics; tags, notes and a lead pipeline; scheduled D1 → R2
   backups and GDPR delete-by-email; TypeScript SDK and React component; team members
   and roles.
+
+---
+
+## 2026-09-18 — Brand palette
+
+The dashboard was still Google-blue (`#0b57d0`) on a cool grey canvas (`#f4f6fb`).
+The product palette is four tokens:
+
+| Name | Hex | Role |
+| --- | --- | --- |
+| Ink | `#050505` | Primary text and UI |
+| Flare | `#FF6A00` | Brand accent and highlights |
+| Mist | `#F5F5F5` | Backgrounds and surfaces |
+| Slate | `#9CA3AF` | Secondary text and borders |
+
+Hex lives in `src/lib/brand.ts` and CSS variables in `src/app/globals.css`. White
+cards stay on Mist so the inset shell still has depth. Flare fails WCAG with white
+text, so primary buttons, the brand chip, and the waitlist badge count use Ink on
+Flare. Dark mode is Ink canvas, Mist text, same Flare accent. Light-first and the
+explicit `.dark` toggle are unchanged.
 
 ---
 
@@ -201,7 +222,7 @@ dashboard.
 (`formflare-theme=dark`). The OS preference is ignored — Tailwind's `dark:` variant is
 rebound to `.dark` on `<html>`.
 
-Color stays light-first (`#f4f6fb` canvas, `#0b57d0` primary). The shell is FormFlare's
+Color stays light-first (Mist canvas, Flare primary, Ink text). The shell is FormFlare's
 own workspace: grouped sidebar (Collect / Connect), a solid **New form** button, an
 inset rounded content panel, compact bordered search, and two-line submission rows.
 It is **not** a Mailflare/Gmail clone.

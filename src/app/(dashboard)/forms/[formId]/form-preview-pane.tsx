@@ -38,7 +38,7 @@ export function FormPreviewPane({
     (mode === "waitlist" ? "Join the waitlist." : `A ${BRAND.name} form.`);
 
   return (
-    <aside className="flex h-full min-h-0 flex-col bg-[#f4f6fb] dark:bg-neutral-950">
+    <aside className="flex h-full min-h-0 flex-col bg-mist dark:bg-ink">
       <div className="shrink-0 px-5 py-4">
         <h2 className={sectionTitle}>Preview</h2>
         <p className={`${hintClass} mt-1`}>

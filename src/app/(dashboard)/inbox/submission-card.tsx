@@ -37,7 +37,7 @@ export function SubmissionCard({ submission }: Props) {
 
   return (
     <li className="group relative border-b border-neutral-100 last:border-b-0 dark:border-neutral-800">
-      {unread ? <span className="absolute inset-y-3 left-0 w-0.5 rounded-full bg-blue-600" aria-hidden /> : null}
+      {unread ? <span className="absolute inset-y-3 left-0 w-0.5 rounded-full bg-flare" aria-hidden /> : null}
 
       <div className="row-hover flex items-stretch">
         <button
@@ -47,7 +47,7 @@ export function SubmissionCard({ submission }: Props) {
           aria-expanded={open}
         >
           <span
-            className={`size-2 shrink-0 rounded-full ${unread ? "bg-blue-600" : "bg-neutral-300 dark:bg-neutral-600"}`}
+            className={`size-2 shrink-0 rounded-full ${unread ? "bg-flare" : "bg-neutral-300 dark:bg-neutral-600"}`}
             aria-hidden
           />
           <span className="grid min-w-0 flex-1 grid-cols-1 items-center gap-x-4 sm:grid-cols-[minmax(0,220px)_minmax(0,1fr)_auto]">

@@ -1,3 +1,4 @@
+import { BRAND } from "../brand";
 import { publicCount } from "../waitlist/rank";
 
 function cors(request: Request): Record<string, string> {
@@ -53,12 +54,11 @@ export async function handlePublicBadge(
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="20" role="img" aria-label="${label}: ${value}">
   <title>${label}: ${value}</title>
-  <rect width="${labelWidth}" height="20" fill="#555"/>
-  <rect x="${labelWidth}" width="${valueWidth}" height="20" fill="#0b57d0"/>
-  <rect width="${width}" height="20" fill="url(#s)"/>
-  <g fill="#fff" text-anchor="middle" font-family="Verdana,DejaVu Sans,sans-serif" font-size="11">
-    <text x="${labelWidth / 2}" y="14">${label}</text>
-    <text x="${labelWidth + valueWidth / 2}" y="14">${value}</text>
+  <rect width="${labelWidth}" height="20" fill="${BRAND.colors.ink}"/>
+  <rect x="${labelWidth}" width="${valueWidth}" height="20" fill="${BRAND.colors.flare}"/>
+  <g text-anchor="middle" font-family="Verdana,DejaVu Sans,sans-serif" font-size="11">
+    <text x="${labelWidth / 2}" y="14" fill="${BRAND.colors.mist}">${label}</text>
+    <text x="${labelWidth + valueWidth / 2}" y="14" fill="${BRAND.colors.ink}">${value}</text>
   </g>
 </svg>`;
 

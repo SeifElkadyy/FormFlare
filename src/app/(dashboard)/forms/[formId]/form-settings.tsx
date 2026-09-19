@@ -106,7 +106,7 @@ export function FormSettings({
           </div>
 
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="active" defaultChecked={form.active} className="accent-blue-600" />
+            <input type="checkbox" name="active" defaultChecked={form.active} className="accent-flare" />
             Accepting submissions
           </label>
 
@@ -133,7 +133,7 @@ export function FormSettings({
                   type="checkbox"
                   name="doubleOptIn"
                   defaultChecked={form.doubleOptIn}
-                  className="accent-blue-600"
+                  className="accent-flare"
                 />
                 Confirm email before assigning a position
               </label>
@@ -141,7 +141,7 @@ export function FormSettings({
               <>
                 {form.doubleOptIn ? <input type="hidden" name="doubleOptIn" value="on" /> : null}
                 <label className="flex items-center gap-2 text-sm text-neutral-400">
-                  <input type="checkbox" disabled checked={form.doubleOptIn} className="accent-blue-600" />
+                  <input type="checkbox" disabled checked={form.doubleOptIn} className="accent-flare" />
                   Confirm email before assigning a position
                 </label>
                 <Notice tone="warning">
@@ -230,7 +230,7 @@ export function FormSettings({
               type="checkbox"
               name="autoReplyEnabled"
               defaultChecked={form.autoReplyEnabled}
-              className="accent-blue-600"
+              className="accent-flare"
               onChange={(event) => setReply(event.target.checked)}
             />
             Send a reply to the submitter
