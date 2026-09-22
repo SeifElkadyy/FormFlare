@@ -74,15 +74,20 @@ export async function handleSubmission(
   if (!parsed.ok) return errorResponse(request, form, parsed.code);
 
   // Honeypot: respond exactly as a success would, store nothing, enqueue nothing.
-  // A bot that can tell it was caught learns to skip the field.
+  // A bot that can tell it was caught learns to skip the field — so on waitlist forms
+  // the decoy carries the same fields a real signup gets, with a plausible next
+  // position (from the cached counter, so no extra query).
   if (isHoneypotHit(parsed.values, form.honeypotField)) {
+    const waitlist = form.mode === "waitlist";
+    const pending = waitlist && form.doubleOptIn;
+    const position = waitlist && !pending ? form.submissionCount + 1 : null;
     return successResponse(request, form, parsed.wasJson, {
       id: ulid(),
       duplicate: false,
-      pending: false,
-      position: null,
-      rank: null,
-      referralCode: null,
+      pending,
+      position,
+      rank: position,
+      referralCode: waitlist ? newReferralCode() : null,
       redirectOverride: parsed.values._redirect,
     });
   }

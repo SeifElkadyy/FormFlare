@@ -17,8 +17,14 @@ otherwise `303 See Other` to the form's redirect URL or the built-in `/thanks` p
 { "ok": true, "id": "01M2P...", "waitlist": { "position": 214 } }
 ```
 
-`waitlist` appears only for waitlist forms. A repeat signup returns the **original**
-position with `"duplicate": true` and does not create a second row.
+`waitlist` appears only for waitlist forms. A repeat signup returns that person's
+**current** place (their signup position, moved up by any confirmed referrals) with
+`"duplicate": true`, and does not create a second row.
+
+Because a repeat signup answers with a place, anyone who can post to the form can
+learn whether an address is already on the list. That is deliberate — see
+[DECISIONS.md](DECISIONS.md), "Waitlist duplicates reveal membership". The per-IP
+rate limit bounds how fast it can be probed.
 
 ### Errors
 

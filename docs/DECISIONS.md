@@ -31,6 +31,34 @@ Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
 
 ---
 
+## 2026-09-23 — Instance root, body cap, waitlist decoys
+
+**`/` redirects to `/login`.** The root used to be a marketing hero with sample inbox
+data and a "Create account" CTA. On a deployed instance that is the deployer's URL, so
+it advertised FormFlare on their domain and pointed strangers at `/setup`. `/login`
+already forwards to `/setup` (no owner) or `/home` (signed in). Marketing belongs on a
+separate site.
+
+**Multipart bodies are read through the capped stream before `formData()`.**
+`request.formData()` buffers the whole body before the running size total runs, so a
+chunked upload with no `Content-Length` could hold up to the plan's body limit
+(100 MB on Free) in a 128 MB Worker. The body is now read with the same capped reader
+as JSON and the bounded copy is parsed.
+
+**Honeypot decoys match a real waitlist response.** The decoy lacked
+`waitlist.position` / `referralCode` (and `pos` on the redirect), so a bot could tell
+it was caught. It now returns the cached counter + 1 as its position, `pending` for
+double-opt-in forms, and a throwaway referral code.
+
+**Waitlist duplicates reveal membership — accepted.** A repeat signup returns the
+person's current place, so posting an address tells you whether it is on the list.
+Hiding it would mean giving repeat signups no place at all ("You're #214" is the
+feature), and any difference between the two responses leaks the same bit. The per-IP
+rate limit bounds probing. `api.md` also said "original" position; it is the current
+rank (referrals move it). Fixed.
+
+---
+
 ## 2026-09-18 — Brand palette
 
 The dashboard was still Google-blue (`#0b57d0`) on a cool grey canvas (`#f4f6fb`).

@@ -19,7 +19,6 @@ import {
   Search,
   Settings,
   ShieldAlert,
-  ShieldCheck,
   SunMedium,
   Trash2,
   Webhook,
@@ -127,10 +126,6 @@ export function SpamIcon() {
 
 export function ArrowRightIcon() {
   return <ArrowRight {...icon} />;
-}
-
-export function ShieldCheckIcon() {
-  return <ShieldCheck {...icon} />;
 }
 
 export function FilterIcon() {

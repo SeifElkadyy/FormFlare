@@ -182,6 +182,27 @@ describe("size limits", () => {
     expect(res.status).toBe(413);
   });
 
+  /** Chunked bodies carry no Content-Length; the stream cap must stop them mid-read. */
+  it("413s a chunked multipart body over the cap", async () => {
+    const { publicId } = await seedForm({ fileMaxBytes: 1024 });
+    const fd = new FormData();
+    fd.append("cv", new File(["y".repeat(2 * 1024 * 1024)], "cv.txt", { type: "text/plain" }));
+    const encoded = new Response(fd);
+    const res = await handleSubmission(
+      new Request(`https://forms.test/f/${publicId}`, {
+        method: "POST",
+        body: encoded.body,
+        headers: {
+          "content-type": encoded.headers.get("content-type") ?? "",
+          accept: "application/json",
+        },
+      }),
+      env,
+      ctx(),
+    );
+    expect(res.status).toBe(413);
+  });
+
   it("413s a file over the form's limit", async () => {
     const { publicId } = await seedForm({ fileMaxBytes: 1024, fileTypesJson: '["text/plain"]' });
     const body = new FormData();
@@ -304,6 +325,22 @@ describe("honeypot", () => {
       0,
     );
     expect(jobs).toBe(0);
+  });
+
+  it("gives waitlist bots the same response shape as a real signup", async () => {
+    const { publicId } = await seedForm({ mode: "waitlist" });
+    const real = await handleSubmission(jsonPost(publicId, { email: "a@example.com" }), env, ctx());
+    clearFormCache();
+    const bot = await handleSubmission(
+      jsonPost(publicId, { email: "bot@example.com", _gotcha: "x" }),
+      env,
+      ctx(),
+    );
+    const realJson = (await real.json()) as { waitlist: object };
+    const botJson = (await bot.json()) as { waitlist: { position: number } };
+    expect(Object.keys(botJson).sort()).toEqual(Object.keys(realJson).sort());
+    expect(Object.keys(botJson.waitlist).sort()).toEqual(Object.keys(realJson.waitlist).sort());
+    expect(botJson.waitlist.position).toBe(2);
   });
 
   it("uses the form's configured honeypot field name", async () => {

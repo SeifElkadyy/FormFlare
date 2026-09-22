@@ -37,9 +37,9 @@ export async function claimPosition(d1: D1Database, formId: string): Promise<num
 /**
  * Find an existing waitlist signup for this email.
  *
- * A duplicate is not an error (Section 12.1): the submitter is told their original
- * position, so re-submitting the form is idempotent from their point of view and does
- * not leak whether someone else signed up with that address.
+ * A duplicate is not an error (Section 12.1): the submitter is told their current
+ * place, so re-submitting the form is idempotent from their point of view. This does
+ * reveal that the address is on the list — accepted in docs/DECISIONS.md.
  */
 export async function findExistingSignup(
   d1: D1Database,

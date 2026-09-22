@@ -71,10 +71,10 @@ export async function parseBody(request: Request, maxTotalBytes: number): Promis
 }
 
 async function parseJson(request: Request, maxTotalBytes: number): Promise<ParsedBody> {
-  const text = await readCapped(request, maxTotalBytes);
-  if (text === null) return { ok: false, code: "payload_too_large" };
+  const bytes = await readCapped(request, maxTotalBytes);
+  if (bytes === null) return { ok: false, code: "payload_too_large" };
 
-  const parsed: unknown = JSON.parse(text);
+  const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     return { ok: false, code: "malformed_body" };
   }
@@ -92,7 +92,16 @@ async function parseJson(request: Request, maxTotalBytes: number): Promise<Parse
 }
 
 async function parseForm(request: Request, maxTotalBytes: number): Promise<ParsedBody> {
-  const form = await request.formData();
+  // `request.formData()` buffers the entire body before we see a single entry, so a
+  // chunked upload with no Content-Length would be held in memory up to Cloudflare's
+  // plan limit (100 MB on Free) — close to the Worker's 128 MB. Read it through the
+  // capped stream first, then parse the bounded copy.
+  const bytes = await readCapped(request, maxTotalBytes);
+  if (bytes === null) return { ok: false, code: "payload_too_large" };
+
+  const form = await new Response(bytes as BufferSource, {
+    headers: { "content-type": request.headers.get("content-type") ?? "" },
+  }).formData();
 
   const values: Record<string, string> = {};
   const files: ParsedFile[] = [];
@@ -132,13 +141,13 @@ async function parseForm(request: Request, maxTotalBytes: number): Promise<Parse
 }
 
 /**
- * Read a body as text, stopping as soon as the cap is exceeded.
+ * Read a body, stopping as soon as the cap is exceeded.
  *
- * Streams rather than calling `request.text()`, so an oversized body is abandoned
- * instead of being fully buffered first.
+ * Streams rather than calling `request.arrayBuffer()`, so an oversized body is
+ * abandoned instead of being fully buffered first.
  */
-async function readCapped(request: Request, maxBytes: number): Promise<string | null> {
-  if (!request.body) return "";
+async function readCapped(request: Request, maxBytes: number): Promise<Uint8Array | null> {
+  if (!request.body) return new Uint8Array(0);
 
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -163,5 +172,5 @@ async function readCapped(request: Request, maxBytes: number): Promise<string | 
     offset += chunk.byteLength;
   }
 
-  return new TextDecoder().decode(joined);
+  return joined;
 }
