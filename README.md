@@ -8,11 +8,6 @@ Deploys on the Cloudflare **free plan**, with **no payment method** and **no sec
 configure. Cloudflare copies this repository into your GitHub account, creates the
 database and queue, and deploys. Then open `/setup` to create your admin account.
 
-> **⚠️ If your first build fails with "Could not read package.json"** — make any small
-> commit in your new repository (editing the README on GitHub is enough) and the build
-> will succeed. **Retrying the build does not work**, because the retry rebuilds the same
-> empty commit. See [Troubleshooting](./docs/troubleshooting.md#the-first-build-fails-with-could-not-read-packagejson).
-
 <!-- TODO(screenshots): dashboard inbox + form settings, before announcing. -->
 
 ## What it does
@@ -61,6 +56,14 @@ npm run preview
 | `npm run reset-password`               | Reset an account password from the CLI                          |
 
 ## FAQ
+
+### My first build failed with "Could not read package.json"
+
+Make any small commit in your new repository — editing the README on GitHub is enough —
+and the next build succeeds. Retrying the failed build does not help: Cloudflare
+sometimes builds the empty commit it creates before your code arrives, and a retry
+rebuilds that same commit. See
+[Troubleshooting](./docs/troubleshooting.md#the-first-build-fails-with-could-not-read-packagejson).
 
 ### I forgot my admin password. How do I get back in?
 
