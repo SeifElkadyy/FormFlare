@@ -5,6 +5,7 @@ import { getEnv } from "@/lib/env";
 import { AuthShell } from "@/components/shell";
 import { LoginForm } from "./login-form";
 import { authCardClass } from "@/lib/ui";
+import { UPSTREAM_REPO } from "@/lib/version";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,17 @@ export default async function LoginPage() {
           Use the admin account you created at setup.
         </p>
         <LoginForm />
+        {/* The one symptom a second install with default resource names shows: it reuses
+            the first install's database, so there is already an owner and no /setup. */}
+        <p className="mt-6 text-xs leading-5 text-slate">
+          Just deployed and never saw setup? This copy may share a database with another FormFlare
+          in the same Cloudflare account.{" "}
+          <a
+            href={`https://github.com/${UPSTREAM_REPO}/blob/main/docs/troubleshooting.md#deploy-fails-with-already-has-a-consumer-or-limit-of-5-cron-triggers`}
+          >
+            How to fix it
+          </a>
+        </p>
       </div>
     </AuthShell>
   );
