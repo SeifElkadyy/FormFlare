@@ -2,17 +2,15 @@ import type { LucideProps } from "lucide-react";
 import {
   Archive,
   ArrowRight,
+  ArrowUpRight,
   Check,
   ChevronDown,
   ChevronRight,
   ChevronUp,
   Copy,
-  House,
   Inbox,
-  KeyRound,
-  ListFilter,
+  LogOut,
   MailOpen,
-  Menu,
   MoonStar,
   NotepadText,
   Plus,
@@ -21,7 +19,6 @@ import {
   ShieldAlert,
   SunMedium,
   Trash2,
-  Webhook,
   X,
 } from "lucide-react";
 
@@ -32,9 +29,6 @@ const icon = {
   "aria-hidden": true,
 } satisfies LucideProps;
 
-export function HomeIcon() {
-  return <House {...icon} />;
-}
 
 export function InboxIcon() {
   return <Inbox {...icon} />;
@@ -44,21 +38,12 @@ export function FormsIcon() {
   return <NotepadText {...icon} />;
 }
 
-export function WebhooksIcon() {
-  return <Webhook {...icon} />;
-}
 
-export function KeysIcon() {
-  return <KeyRound {...icon} />;
-}
 
 export function SettingsIcon() {
   return <Settings {...icon} />;
 }
 
-export function MenuIcon() {
-  return <Menu {...icon} />;
-}
 
 export function CloseIcon() {
   return <X {...icon} />;
@@ -128,6 +113,11 @@ export function ArrowRightIcon() {
   return <ArrowRight {...icon} />;
 }
 
-export function FilterIcon() {
-  return <ListFilter {...icon} />;
+
+export function LogOutIcon() {
+  return <LogOut {...icon} />;
+}
+
+export function ExternalIcon() {
+  return <ArrowUpRight {...icon} />;
 }

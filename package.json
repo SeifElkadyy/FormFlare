@@ -25,13 +25,13 @@
   "cloudflare": {
     "bindings": {
       "DB": {
-        "description": "D1 database for forms, submissions, and users. Leave as **new** to create it automatically."
+        "description": "D1 database for forms, submissions, and users. Leave as **new** to create it automatically. **Second FormFlare in this account?** Rename it (for example `formflare-2`), or it silently shares the first install's data."
       },
       "BUCKET": {
         "description": "R2 bucket for uploaded files. Leave as **new**."
       },
       "JOBS": {
-        "description": "Queue for sending emails and webhooks in the background. Leave as **new**."
+        "description": "Queue for sending emails and webhooks in the background. Leave as **new**. **Second FormFlare in this account?** Rename it (for example `formflare-2-jobs`): a queue can feed only one Worker, so the default name fails the deploy."
       },
       "EMAIL": {
         "description": "Cloudflare Email Sending. Optional: owner alerts and auto-replies need Email Sending enabled, and sending to arbitrary recipients needs the **Workers Paid** plan. The app works without it."

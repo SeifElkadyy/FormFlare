@@ -45,8 +45,7 @@ export async function createWebhookAction(
   }
 
   await audit(db, user.id, "webhook.create", { url: validated.url, preset });
-  revalidatePath("/webhooks");
-  revalidatePath("/home");
+  revalidatePath("/forms", "layout");
 
   return { created: { secret, preset } };
 }
@@ -59,8 +58,7 @@ export async function deleteWebhookAction(formData: FormData): Promise<void> {
   await db.delete(webhooks).where(eq(webhooks.id, id));
 
   await audit(db, user.id, "webhook.delete", { webhookId: id });
-  revalidatePath("/webhooks");
-  revalidatePath("/home");
+  revalidatePath("/forms", "layout");
 }
 
 export async function toggleWebhookAction(formData: FormData): Promise<void> {
@@ -72,7 +70,7 @@ export async function toggleWebhookAction(formData: FormData): Promise<void> {
   if (!rows[0]) return;
 
   await db.update(webhooks).set({ active: !rows[0].active }).where(eq(webhooks.id, id));
-  revalidatePath("/webhooks");
+  revalidatePath("/forms", "layout");
 }
 
 /**
@@ -117,7 +115,7 @@ export async function testWebhookAction(
     hook.preset === "slack" || hook.preset === "discord" ? hook.preset : "generic",
   );
 
-  revalidatePath("/webhooks");
+  revalidatePath("/forms", "layout");
   return result.ok
     ? {}
     : {
@@ -132,5 +130,5 @@ export async function clearDeliveryLogAction(formData: FormData): Promise<void> 
 
   const id = String(formData.get("id") ?? "");
   await db.delete(webhookDeliveries).where(eq(webhookDeliveries.webhookId, id));
-  revalidatePath("/webhooks");
+  revalidatePath("/forms", "layout");
 }

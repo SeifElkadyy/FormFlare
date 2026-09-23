@@ -25,9 +25,123 @@ Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
   Slate). Still waiting on a dedicated capture pass; do not shoot until the
   flame lockup and dashboard are the look we want to freeze.
 - **Later from the plan** — Workers AI spam scoring; Telegram presets; n8n/Zapier
-  templates; per-form analytics; tags, notes and a lead pipeline; scheduled D1 → R2
-  backups and GDPR delete-by-email; TypeScript SDK and React component; team members
-  and roles.
+  templates; tags, notes and a lead pipeline; GDPR delete-by-email; TypeScript SDK and
+  React component; team members and roles. (Per-form analytics shipped as Insights.)
+
+---
+
+## 2026-09-23 — Redesign: form-centric, three places, one accent
+
+The dashboard had grown one screen per feature. Home repeated the sidebar (a Quick access
+grid, four stat cards, a checklist, two lists, two "New form" buttons). The form page put
+fields, seven collapsible settings, a preview and Share on one scroll, with Share (the
+step that matters after creating a form) at the bottom. Creating a form left you on the
+list. Webhooks and API keys had top-level nav slots.
+
+**Structure.** Three nav items: **Forms**, **Inbox**, **Settings**. This is the shape most
+form tools converge on (Tally, Formspree, Basin): the form is the unit, with tabs.
+
+| Form tab | Holds |
+| --- | --- |
+| Submissions | 30-day stats and chart; the list; Leaderboard view for waitlists |
+| Edit | Title, description, fields, live preview |
+| Share | Link (hosted page and custom address), widget, or your own form (code) |
+| Settings | Email alerts and auto-reply, redirect, waitlist options, spam protection, webhooks, delete |
+
+- Forms is the landing page after sign-in and setup. With no forms it *is* the create
+  step. Delivery-failure alerts moved here from Home, and `/home` redirects.
+- Creating a form redirects straight to its Share tab. The defaults already work.
+- Pause/Resume is a header button with its own action, not a checkbox inside a save.
+- Webhooks live on each form's Settings. All-forms webhooks (`form_id` null) show on
+  every form, labelled. `/webhooks` redirects to Forms.
+- API keys are a section of Settings. `/api-keys` redirects there.
+- Inbox is the all-forms list; a form's Submissions tab is the same component pinned
+  to that form. Search moved from the global header into the list's filter row.
+
+**Removed from the UI** (backend unchanged): the Home page, Quick access, the setup
+checklist (now empty states), the `/forms/:id/preview` route (Edit has a preview; Share
+opens the real page), Insights' sources and countries, Inbox date filters and the "Read"
+status tab, the "Add this site" shortcut in allowed origins (it suggested the dashboard's
+own address, which is never what the owner means), and the admin-login link on public
+hosted and thank-you pages.
+
+**Saves are per tab.** `updateFormAction` used to write every column from one big form,
+so a tab that did not submit a checkbox would have switched it off. It now takes a
+`section` (`edit`, `share`, `settings`) and updates only that section's columns.
+
+Two behaviour fixes made on the way:
+
+- Double opt-in can always be turned **off**. Before, with email unavailable, the flag
+  was forced to stay on, which left signups unconfirmed indefinitely. Turning it **on**
+  still needs a mailer.
+- Turnstile has an explicit "Turn the bot check off". Blank inputs still mean "keep": a
+  secret with no site key is valid for owners whose own HTML carries the site key.
+
+**Edit preview is inert.** It used to POST real submissions, so trying the preview
+filled the inbox. It now renders the fields via the shared `FormFields` component
+(also used by the hosted page, so they cannot drift) inside `inert`.
+
+**Brand: one accent.** Ink, white and hairline gray everywhere. Flare is kept for the
+primary action on a screen, the logo, focus rings, the active tab underline and chart
+bars. Active nav is a gray pill; pills and badges are neutral; the unread dot is ink.
+`ui.ts` keeps its export names so untouched screens (login, setup) restyled
+automatically. `inputBase` is the width-free input style: `inputClass` carries
+`w-full`, and adding `w-48` beside it lost to `w-full`.
+
+**Mobile.** Three nav items fit in a top bar, so the drawer is gone. The Edit preview sits
+beside the editor only at `xl`; field rows wrap instead of collapsing the name input.
+
+---
+
+## 2026-09-23 — Widget sizing, delivery alerts, Insights
+
+**The widget was broken after submit, not just badly sized.** It iframed `/p/:slug` at a
+fixed 420px, and the form inside posted to `/f/:id`, which 303s to `/thanks`. `/thanks`
+carried `frame-ancestors 'none'` / `X-Frame-Options: DENY`, so every widget submission
+ended on a refused frame. Now:
+
+- `/thanks` gets the same framable headers as `/p/*`. It renders owner text and a
+  number from the query string, and has nothing to clickjack.
+- The hosted page posts to `/f/:id?embed=1` when framed. `handle.ts` carries `embed=1`
+  onto the `/thanks` URL, which then renders without the page chrome.
+- Both report their content height via `postMessage` (`src/components/frame-height.tsx`),
+  and `widget.js` accepts it only from its own iframe's window and origin. Measures the
+  content wrapper, not the document. The root layout's `min-h-full` body means
+  `scrollHeight` can never be smaller than the iframe, so it would grow but never shrink.
+- A form with a redirect URL submits with `target="_top"`: the owner's site almost
+  certainly refuses to be framed.
+- Public pages allow `form-action 'self' https:`. Chrome applies `form-action` to the
+  redirect after a submit, so a hosted form redirecting to the owner's site was blocked.
+
+Also: the hosted page never set `enctype="multipart/form-data"`, so file fields sent the
+file *name* only. Set when the form has a file field.
+
+**Failed deliveries surface on Home.** Failed webhook deliveries (active webhooks only)
+and failed emails in the last 7 days rank first among the home insights. Nobody reads a
+delivery log unprompted. The count includes the rare "marked as spam before delivery"
+failure; not worth a status column to separate.
+
+**Insights page (`/forms/:id/insights`).** Submissions per day (30 days, UTC, spam
+excluded), hosted-page/widget views, conversion, top referrer hosts and countries. For
+waitlists: confirmed/unconfirmed/referred counts and a top-50 leaderboard ordered by the
+same score and tie-break as `waitlistRank` (a test checks they agree).
+
+Views are a new `form_views (form_id, day, views)` table. Additive migration 0007, one
+upsert per `/p` render via `waitUntil`. There are no cookies and no visitor ids.
+Snippets on the owner's own site can't be counted, so the page says views cover the
+hosted page and widget only. Bot views inflate it; acceptable for a trend line.
+
+Not Workers Analytics Engine: it needs an API token to query, and FormFlare never
+requires one.
+
+**Second install in one account.** Can't be made unique in code (static names in
+`wrangler.jsonc`). The Deploy page's D1 and Queue descriptions now say to rename them for
+a second copy, and the login page links the fix. The login page is the only screen a
+second install that shares a database ever shows.
+
+**Docs:** `docs/custom-domain.md` covers `routes` in `wrangler.jsonc` versus the
+dashboard, the instance URL, and turning off `workers.dev`. `docs/backups.md` covers D1
+Time Travel (7 days on Free, 30 on Paid, always on) and exports.
 
 ---
 

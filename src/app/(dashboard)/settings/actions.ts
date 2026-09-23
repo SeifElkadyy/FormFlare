@@ -73,7 +73,7 @@ export async function saveEmailSettingsAction(
 
   await audit(db, user.id, "settings.email", { provider });
   revalidatePath("/settings");
-  revalidatePath("/home");
+  revalidatePath("/forms", "layout");
   return { ok: "Email settings saved." };
 }
 

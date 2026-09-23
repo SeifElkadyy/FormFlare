@@ -406,5 +406,7 @@ function thanksUrl(
   url.searchParams.set("form", form.publicId);
   if (pending) url.searchParams.set("pending", "1");
   if (position !== null) url.searchParams.set("pos", String(position));
+  // Set by the hosted page when it is inside the embed widget's iframe.
+  if (new URL(request.url).searchParams.get("embed") === "1") url.searchParams.set("embed", "1");
   return url.toString();
 }

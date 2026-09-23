@@ -7,14 +7,6 @@ const TONE = {
   success: successClass,
 } as const;
 
-export function Notice({
-  tone,
-  children,
-}: {
-  tone: keyof typeof TONE;
-  children: ReactNode;
-}) {
-  return (
-    <p className={TONE[tone]}>{children}</p>
-  );
+export function Notice({ tone, children }: { tone: keyof typeof TONE; children: ReactNode }) {
+  return <p className={TONE[tone]}>{children}</p>;
 }

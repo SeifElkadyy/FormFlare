@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { useActionState } from "react";
-import { Modal } from "@/components/modal";
+import { useActionState, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
-import { PlusIcon } from "@/components/icons";
+import { Section } from "@/components/section";
 import {
   btnDanger,
   btnPrimary,
-  btnPrimaryLead,
+  btnSecondary,
+  btnToolbar,
+  cn,
   codeBlockClass,
-  emptyClass,
   errorClass,
   hintClass,
   inputClass,
@@ -25,126 +24,115 @@ interface KeyRow {
   name: string;
   prefix: string;
   lastUsedAt: number | null;
-  createdAt: number;
 }
 
-export function CreateKeyDialog() {
-  const [open, setOpen] = useState(false);
+/** For reading submissions from code. Posting to a form never needs one. */
+export function ApiKeysPanel({ keys }: { keys: KeyRow[] }) {
+  const [adding, setAdding] = useState(false);
 
   return (
-    <>
-      <button type="button" className={btnPrimaryLead} onClick={() => setOpen(true)}>
-        <PlusIcon />
-        New key
-      </button>
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        title="New API key"
-        description="Read submissions programmatically. The secret is shown once."
-      >
-        <CreateKeyForm onDone={() => setOpen(false)} />
-      </Modal>
-    </>
+    <Section
+      id="api"
+      title="API keys"
+      description={
+        <>
+          For reading submissions from your own code or tools like Zapier. Forms don&rsquo;t need a
+          key. <a href="https://github.com/SeifElkadyy/FormFlare/blob/main/docs/api.md">API docs</a>
+        </>
+      }
+    >
+      {keys.length > 0 ? (
+        <ul className="divide-y divide-neutral-100 rounded-xl bg-white shadow-[var(--shadow-border)] dark:divide-neutral-800 dark:bg-neutral-900">
+          {keys.map((key) => (
+            <li
+              key={key.id}
+              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{key.name}</p>
+                <p className={`font-mono ${hintClass}`}>
+                  {key.prefix}… ·{" "}
+                  {key.lastUsedAt
+                    ? `used ${new Date(key.lastUsedAt).toISOString().slice(0, 10)}`
+                    : "never used"}
+                </p>
+              </div>
+              <form
+                action={revokeKeyAction}
+                onSubmit={(event) => {
+                  if (!confirm(`Revoke "${key.name}"? Anything using it stops working.`)) {
+                    event.preventDefault();
+                  }
+                }}
+              >
+                <input type="hidden" name="id" value={key.id} />
+                <button type="submit" className={btnDanger}>
+                  Revoke
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {adding ? (
+        <CreateKey onDone={() => setAdding(false)} />
+      ) : (
+        <button
+          type="button"
+          className={cn(btnSecondary, "self-start")}
+          onClick={() => setAdding(true)}
+        >
+          Create a key
+        </button>
+      )}
+    </Section>
   );
 }
 
-function CreateKeyForm({ onDone }: { onDone: () => void }) {
+function CreateKey({ onDone }: { onDone: () => void }) {
   const [state, formAction, pending] = useActionState(createKeyAction, initialState);
 
   if (state.created) {
     return (
-      <div className="flex flex-col gap-3">
-        <p className="text-sm font-medium">Your new API key</p>
-        <p className={hintClass}>
-          Shown once. Store it now — only a hash is kept, so it cannot be shown again.
-        </p>
-        <div className="flex items-center justify-end">
+      <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-[var(--shadow-border)] dark:bg-neutral-900">
+        <p className="text-sm font-medium">Copy your key now. It won&rsquo;t be shown again</p>
+        <div className="flex items-start gap-2">
+          <code className={cn(codeBlockClass, "min-w-0 flex-1")}>{state.created.plaintext}</code>
           <CopyButton text={state.created.plaintext} />
         </div>
-        <code className={codeBlockClass}>{state.created.plaintext}</code>
-        <div className="flex justify-end pt-1">
-          <button type="button" className={btnPrimary} onClick={onDone}>
-            Done
-          </button>
-        </div>
+        <p className={hintClass}>
+          Send it as <code>Authorization: Bearer …</code>
+        </p>
+        <button type="button" className={cn(btnSecondary, "self-start")} onClick={onDone}>
+          Done
+        </button>
       </div>
     );
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="name" className={labelClass}>
-          Name
-        </label>
-        <input
-          id="name"
-          name="name"
-          required
-          placeholder="Zapier integration"
-          className={inputClass}
-        />
-      </div>
-
-      {state.error ? (
-        <p role="alert" className={errorClass}>
-          {state.error}
-        </p>
-      ) : null}
-
-      <div className="flex justify-end pt-1">
+    <form
+      action={formAction}
+      className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-[var(--shadow-border)] dark:bg-neutral-900"
+    >
+      <label htmlFor="key-name" className={labelClass}>
+        What is it for?
+      </label>
+      <input id="key-name" name="name" required placeholder="Zapier" className={inputClass} />
+      <div className="flex items-center gap-2">
         <button type="submit" disabled={pending} className={btnPrimary}>
           {pending ? "Creating…" : "Create key"}
         </button>
+        <button type="button" className={btnToolbar} onClick={onDone}>
+          Cancel
+        </button>
+        {state.error ? (
+          <p role="alert" className={errorClass}>
+            {state.error}
+          </p>
+        ) : null}
       </div>
     </form>
-  );
-}
-
-export function ApiKeyList({ keys }: { keys: KeyRow[] }) {
-  if (keys.length === 0) {
-    return (
-      <p className={emptyClass}>
-        No API keys yet. Press <strong>New key</strong> to read submissions from Zapier or your own
-        app. Posting to a form does not use a key.
-      </p>
-    );
-  }
-
-  return (
-    <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
-      {keys.map((key) => (
-        <li
-          key={key.id}
-          className="row-hover flex flex-wrap items-center justify-between gap-3 px-6 py-3.5"
-        >
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">{key.name}</p>
-            <p className={`mt-0.5 font-mono ${hintClass}`}>{key.prefix}…</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <p className={hintClass}>
-              {key.lastUsedAt
-                ? `Last used ${new Date(key.lastUsedAt).toISOString().slice(0, 10)}`
-                : "Never used"}
-            </p>
-            <form
-              action={revokeKeyAction}
-              onSubmit={(event) => {
-                if (!confirm(`Revoke "${key.name}"? Anything using it will stop working.`)) {
-                  event.preventDefault();
-                }
-              }}
-            >
-              <input type="hidden" name="id" value={key.id} />
-              <button type="submit" className={btnDanger}>
-                Revoke
-              </button>
-            </form>
-          </div>
-        </li>
-      ))}
-    </ul>
   );
 }

@@ -23,7 +23,9 @@ Resend API key stored in D1 (never a deploy secret). Forms still work with email
 You can rename the Worker, the database and the queue on the setup page — nothing
 depends on those names.
 
-After it deploys, open your Worker URL and follow `/setup`.
+After it deploys, open your Worker URL and follow `/setup`. To serve it from your own
+domain, see [custom-domain.md](custom-domain.md). For backups and restores, see
+[backups.md](backups.md).
 
 ## What is deliberately not included
 

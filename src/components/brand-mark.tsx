@@ -7,29 +7,40 @@ export function BrandMark({
   href = "/",
   className,
   size = "md",
+  iconOnly = false,
 }: {
   href?: string;
   className?: string;
   size?: "sm" | "md";
+  iconOnly?: boolean;
 }) {
-  const icon = size === "sm" ? "h-7 w-7" : "h-8 w-8";
-  const label = size === "sm" ? "text-lg" : "text-base";
-
   return (
     <Link
       href={href}
-      className={cn("flex min-w-0 items-center gap-3 text-neutral-800 no-underline dark:text-neutral-100", className)}
+      className={cn(
+        "flex min-w-0 items-center gap-2 text-ink no-underline dark:text-mist",
+        className,
+      )}
       aria-label={`${BRAND.name} home`}
     >
       <span
         className={cn(
-          "flex shrink-0 items-center justify-center rounded-lg bg-flare text-ink",
-          icon,
+          "flex shrink-0 items-center justify-center rounded-md bg-flare text-ink",
+          size === "sm" ? "size-6" : "size-7",
         )}
       >
         <FlameIcon />
       </span>
-      <span className={cn("truncate font-semibold tracking-tight", label)}>{BRAND.name}</span>
+      {iconOnly ? null : (
+        <span
+          className={cn(
+            "truncate font-semibold tracking-tight",
+            size === "sm" ? "text-sm" : "text-base",
+          )}
+        >
+          {BRAND.name}
+        </span>
+      )}
     </Link>
   );
 }
