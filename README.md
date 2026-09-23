@@ -224,6 +224,8 @@ against brute force, not a strict quota. Add WAF rules if you need a firm limit.
 ## Documentation
 
 - [Embedding](./docs/embedding.md) — HTML, fetch/JSON, and React on your own site
+- [Custom domain](./docs/custom-domain.md) — `forms.example.com` instead of `workers.dev`
+- [Backups](./docs/backups.md) — D1 Time Travel, restores, and exports
 - [API](./docs/api.md)
 - [Troubleshooting](./docs/troubleshooting.md)
 - [Decisions](./docs/DECISIONS.md)

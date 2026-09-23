@@ -59,6 +59,18 @@ If you do not want to style anything: `/p/<slug-or-publicId>`, or
 
 Those use FormFlare's look, not yours.
 
+The widget sizes itself to the form, and to the thank-you message after a submit. You
+don't need to set a height. Options:
+
+| Attribute | Effect |
+| --- | --- |
+| `data-form` | The form's public id or slug (required) |
+| `data-ref` | A waitlist referral code. Without it, a `?ref=` on the host page is used |
+| `data-title` | The iframe's accessible title (default `Form`) |
+
+A form with its own redirect URL leaves the iframe on submit and opens that page in
+the full window, since most sites don't allow being framed.
+
 ## CORS and redirects
 
 Browser `fetch` sends `Origin`. An allow-list that does not include that origin

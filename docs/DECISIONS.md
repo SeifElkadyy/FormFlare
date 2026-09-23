@@ -25,9 +25,60 @@ Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
   Slate). Still waiting on a dedicated capture pass; do not shoot until the
   flame lockup and dashboard are the look we want to freeze.
 - **Later from the plan** — Workers AI spam scoring; Telegram presets; n8n/Zapier
-  templates; per-form analytics; tags, notes and a lead pipeline; scheduled D1 → R2
-  backups and GDPR delete-by-email; TypeScript SDK and React component; team members
-  and roles.
+  templates; tags, notes and a lead pipeline; GDPR delete-by-email; TypeScript SDK and
+  React component; team members and roles. (Per-form analytics shipped as Insights.)
+
+---
+
+## 2026-09-23 — Widget sizing, delivery alerts, Insights
+
+**The widget was broken after submit, not just badly sized.** It iframed `/p/:slug` at a
+fixed 420px, and the form inside posted to `/f/:id`, which 303s to `/thanks`. `/thanks`
+carried `frame-ancestors 'none'` / `X-Frame-Options: DENY`, so every widget submission
+ended on a refused frame. Now:
+
+- `/thanks` gets the same framable headers as `/p/*`. It renders owner text and a
+  number from the query string, and has nothing to clickjack.
+- The hosted page posts to `/f/:id?embed=1` when framed. `handle.ts` carries `embed=1`
+  onto the `/thanks` URL, which then renders without the page chrome.
+- Both report their content height via `postMessage` (`src/components/frame-height.tsx`),
+  and `widget.js` accepts it only from its own iframe's window and origin. Measures the
+  content wrapper, not the document. The root layout's `min-h-full` body means
+  `scrollHeight` can never be smaller than the iframe, so it would grow but never shrink.
+- A form with a redirect URL submits with `target="_top"`: the owner's site almost
+  certainly refuses to be framed.
+- Public pages allow `form-action 'self' https:`. Chrome applies `form-action` to the
+  redirect after a submit, so a hosted form redirecting to the owner's site was blocked.
+
+Also: the hosted page never set `enctype="multipart/form-data"`, so file fields sent the
+file *name* only. Set when the form has a file field.
+
+**Failed deliveries surface on Home.** Failed webhook deliveries (active webhooks only)
+and failed emails in the last 7 days rank first among the home insights. Nobody reads a
+delivery log unprompted. The count includes the rare "marked as spam before delivery"
+failure; not worth a status column to separate.
+
+**Insights page (`/forms/:id/insights`).** Submissions per day (30 days, UTC, spam
+excluded), hosted-page/widget views, conversion, top referrer hosts and countries. For
+waitlists: confirmed/unconfirmed/referred counts and a top-50 leaderboard ordered by the
+same score and tie-break as `waitlistRank` (a test checks they agree).
+
+Views are a new `form_views (form_id, day, views)` table. Additive migration 0007, one
+upsert per `/p` render via `waitUntil`. There are no cookies and no visitor ids.
+Snippets on the owner's own site can't be counted, so the page says views cover the
+hosted page and widget only. Bot views inflate it; acceptable for a trend line.
+
+Not Workers Analytics Engine: it needs an API token to query, and FormFlare never
+requires one.
+
+**Second install in one account.** Can't be made unique in code (static names in
+`wrangler.jsonc`). The Deploy page's D1 and Queue descriptions now say to rename them for
+a second copy, and the login page links the fix. The login page is the only screen a
+second install that shares a database ever shows.
+
+**Docs:** `docs/custom-domain.md` covers `routes` in `wrangler.jsonc` versus the
+dashboard, the instance URL, and turning off `workers.dev`. `docs/backups.md` covers D1
+Time Travel (7 days on Free, 30 on Paid, always on) and exports.
 
 ---
 
