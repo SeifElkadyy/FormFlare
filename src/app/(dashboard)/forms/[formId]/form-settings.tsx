@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, type ReactNode } from "react";
+import { startTransition, useActionState, useState, type ReactNode } from "react";
 import { deleteFormAction, updateFormAction, type FormState } from "../actions";
 import { Notice } from "@/components/notice";
 import {
@@ -85,7 +85,19 @@ export function FormSettings({
 
   return (
     <div className="flex flex-col gap-4">
-      <form action={formAction} className="flex flex-col gap-4">
+      <form
+        // Not `action={formAction}`: React 19 resets a <form action> after it succeeds,
+        // which snaps controlled inputs (field types, Required ticks, toggles) back to
+        // their first-render DOM defaults while React state keeps the saved values — so
+        // the editor showed the wrong fields right after "Saved". Submitting by hand
+        // skips that reset.
+        onSubmit={(event) => {
+          event.preventDefault();
+          const data = new FormData(event.currentTarget);
+          startTransition(() => formAction(data));
+        }}
+        className="flex flex-col gap-4"
+      >
         <input type="hidden" name="id" value={form.id} />
 
         <section id="fields" className={`${cardClass} flex scroll-mt-6 flex-col gap-4`}>
