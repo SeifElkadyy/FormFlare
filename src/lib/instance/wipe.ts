@@ -12,6 +12,7 @@ import {
   auditLog,
   emailDeliveries,
   files as filesTable,
+  formViews,
   forms,
   projects,
   sessions,
@@ -37,6 +38,7 @@ export async function wipeInstance(db: Database, storage: Storage): Promise<void
   await db.delete(apiKeys);
   await db.delete(auditLog);
   await db.delete(sessions);
+  await db.delete(formViews);
   await db.delete(forms);
   await db.delete(projects);
   await db.delete(users);

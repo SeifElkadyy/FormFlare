@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { type ComponentProps, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { parseFields } from "@/lib/submissions/fields";
+import { btnGhost } from "@/lib/ui";
 import { EmbedSnippets } from "./embed-snippets";
 import { seedDraftFields } from "./field-editor";
 import { FormPreviewPane } from "./form-preview-pane";
@@ -43,6 +45,11 @@ export function FormWorkspace({
       <PageHeader
         title={name.trim() || form.name}
         description={form.active ? "Accepting submissions." : "Paused — not accepting submissions."}
+        actions={
+          <Link href={`/forms/${form.id}/insights`} className={`${btnGhost} no-underline`}>
+            {form.mode === "waitlist" ? "Insights & leaderboard" : "Insights"}
+          </Link>
+        }
       />
 
       <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_minmax(22rem,28rem)] lg:overflow-hidden">

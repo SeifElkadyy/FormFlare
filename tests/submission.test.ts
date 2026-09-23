@@ -128,6 +128,18 @@ describe("content types", () => {
     expect(location.searchParams.get("form")).toBe(publicId);
   });
 
+  /** The embed widget's iframe must land on a compact /thanks that reports its height. */
+  it("carries ?embed=1 through to /thanks", async () => {
+    const { publicId } = await seedForm();
+    const req = new Request(`https://forms.test/f/${publicId}?embed=1`, {
+      method: "POST",
+      body: new URLSearchParams({ email: "a@example.com" }),
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+    });
+    const res = await handleSubmission(req, env, ctx());
+    expect(new URL(res.headers.get("location")!).searchParams.get("embed")).toBe("1");
+  });
+
   it("accepts multipart", async () => {
     const { publicId } = await seedForm();
     const body = new FormData();

@@ -61,26 +61,38 @@ const SECURITY_HEADERS = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
 ];
 
+/*
+ * Framable, and `form-action` also allows https: — Chrome applies form-action to the 303
+ * that follows a submit, so a form redirecting to the owner's own site would otherwise be
+ * blocked. These pages render owner-configured content only, never submitter input.
+ */
+const PUBLIC_PAGE_HEADERS = [
+  {
+    key: "Content-Security-Policy",
+    value: CSP.replace("frame-ancestors 'none'", "frame-ancestors *").replace(
+      "form-action 'self'",
+      "form-action 'self' https:",
+    ),
+  },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+];
+
 const nextConfig: NextConfig = {
   async headers() {
     return [
       {
         /*
-         * Everything except the public submission endpoint and hosted form pages.
+         * Everything except the public submission endpoint and the public pages below.
          * `/f/:id` is handled in worker.ts before Next sees it.
-         * `/p/:slug` is meant to be iframed onto other sites via the embed widget.
          */
-        source: "/((?!f/|p/).*)",
+        source: "/((?!f/|p/|thanks).*)",
         headers: SECURITY_HEADERS,
       },
-      {
-        source: "/p/:path*",
-        headers: [
-          { key: "Content-Security-Policy", value: CSP.replace("frame-ancestors 'none'", "frame-ancestors *") },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-        ],
-      },
+      // `/p/:slug` is iframed onto other sites by the embed widget, and `/thanks` is where
+      // that iframe lands after a submit. Neither has anything worth clickjacking.
+      { source: "/p/:path*", headers: PUBLIC_PAGE_HEADERS },
+      { source: "/thanks", headers: PUBLIC_PAGE_HEADERS },
     ];
   },
 };

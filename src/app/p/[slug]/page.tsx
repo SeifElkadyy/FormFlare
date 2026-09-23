@@ -1,10 +1,20 @@
 import { notFound } from "next/navigation";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { recordView } from "@/lib/insights/form";
 import { getServices } from "@/lib/env";
 import { loadHostedForm } from "@/lib/submissions/form-cache";
 import { effectiveFields, fieldLabel } from "@/lib/submissions/fields";
 import { BrandMark } from "@/components/brand-mark";
-import { authCardClass, btnPrimary, hintClass, inputClass, labelClass, textareaClass } from "@/lib/ui";
+import {
+  authCardClass,
+  btnPrimary,
+  hintClass,
+  inputClass,
+  labelClass,
+  textareaClass,
+} from "@/lib/ui";
 import { BRAND } from "@/lib/brand";
+import { FrameHeight } from "@/components/frame-height";
 
 export const dynamic = "force-dynamic";
 
@@ -22,13 +32,22 @@ export default async function HostedFormPage({
 
   if (!form || !form.active) notFound();
 
+  // Off the render path: a failed counter must never cost a visitor the form.
+  const { env, ctx } = await getCloudflareContext({ async: true });
+  ctx.waitUntil(recordView((env as CloudflareEnv).DB, form.id).catch(() => {}));
+
   const fields = effectiveFields(form.fieldsJson, form.mode);
-  const endpoint = `/f/${form.publicId}`;
   const framed = embed === "1";
+  // `?embed=1` on the endpoint carries through to /thanks so it renders compact. A form
+  // with its own redirect leaves the iframe: the owner's page is unlikely to allow framing.
+  const endpoint = `/f/${form.publicId}${framed ? "?embed=1" : ""}`;
+  const target = framed && form.redirectUrl ? "_top" : undefined;
 
   return (
     <div className={framed ? "min-h-0 bg-white p-4 dark:bg-ink" : "min-h-dvh bg-mist dark:bg-ink"}>
-      {framed ? null : (
+      {framed ? (
+        <FrameHeight />
+      ) : (
         <header className="mx-auto flex h-16 w-full max-w-6xl items-center px-4 sm:px-6">
           <BrandMark href="/" />
         </header>
@@ -46,7 +65,14 @@ export default async function HostedFormPage({
             </p>
           )}
 
-          <form action={endpoint} method="POST" className="mt-6 flex flex-col gap-4">
+          <form
+            action={endpoint}
+            method="POST"
+            target={target}
+            // Without multipart the browser sends only the file name, never the file.
+            encType={fields.some((f) => f.type === "file") ? "multipart/form-data" : undefined}
+            className="mt-6 flex flex-col gap-4"
+          >
             <input
               type="text"
               name={form.honeypotField}
@@ -121,11 +147,7 @@ export default async function HostedFormPage({
 
             {form.turnstileSiteKey ? (
               <>
-                <script
-                  src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-                  async
-                  defer
-                />
+                <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
                 <div className="cf-turnstile" data-sitekey={form.turnstileSiteKey} />
               </>
             ) : null}

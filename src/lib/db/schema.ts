@@ -8,7 +8,14 @@
  * - Booleans are integers with Drizzle's `{ mode: "boolean" }`.
  * - JSON-shaped config is stored as text in `*_json` columns; parse at the edges.
  */
-import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
 /** Instance-wide key/value config: session_secret, setup_completed, signup_enabled, notify_from. */
 export const settings = sqliteTable("settings", {
@@ -294,6 +301,24 @@ export const auditLog = sqliteTable(
     createdAt: integer("created_at").notNull(),
   },
   (t) => [index("audit_log_created_idx").on(t.createdAt), index("audit_log_user_idx").on(t.userId)],
+);
+
+/**
+ * Hosted-page and widget views, one row per form per UTC day. No cookies, no visitor
+ * ids: a counter is all the conversion rate needs. Views of a snippet on the owner's own
+ * site are invisible to us, so this only covers `/p/:slug` and the widget.
+ */
+export const formViews = sqliteTable(
+  "form_views",
+  {
+    formId: text("form_id")
+      .notNull()
+      .references(() => forms.id, { onDelete: "cascade" }),
+    /** Days since the epoch, UTC (`Math.floor(ms / 86_400_000)`). */
+    day: integer("day").notNull(),
+    views: integer("views").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.formId, t.day] })],
 );
 
 export type User = typeof users.$inferSelect;
