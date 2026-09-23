@@ -1,12 +1,12 @@
 # Embedding
 
-The dashboard form page is a split view: settings on the left, a live hosted-page
-preview on the right. Pick **one** way to share (my website / a link / a widget)
-from the Share row. API keys are for **reading** submissions, not for this POST.
+Every form's **Share** tab offers three ways in: a link to a hosted page, a one-line
+widget, or your own form posting to FormFlare. It copies working code for your fields.
+API keys are for **reading** submissions, not for this POST.
 
 `POST https://your-instance/f/<publicId>`
 
-The dashboard form page copies these snippets from the fields you configured.
+Share → **Use your own form** generates these from the fields you set on **Edit**.
 
 ## HTML
 
@@ -47,7 +47,7 @@ script (`https://yoursite.com`). Empty means any site may submit.
 ## React
 
 Same endpoint, client-side `fetch`, `Accept: application/json`. Copy the React tab
-on the form page so the field names match what you configured.
+under Share → **Use your own form** so the field names match what you configured.
 
 ## Hosted page / widget
 

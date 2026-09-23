@@ -48,7 +48,7 @@ those links keep pointing at `workers.dev`. If email is off, there's nothing to 
 
 Things that just follow whichever address you're on, no change needed:
 
-- Embed snippets and the widget `<script>` on each form page. **Re-copy them** from
+- Embed snippets and the widget `<script>` on each form's Share tab. **Re-copy them** from
   the dashboard on the new domain, and update the sites that use the old ones.
 - The dashboard login. Cookies are per-domain, so you sign in once more on the new
   address.

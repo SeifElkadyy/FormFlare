@@ -84,67 +84,6 @@ export async function formActivity(
   };
 }
 
-export interface SourceRow {
-  label: string;
-  count: number;
-}
-
-/**
- * Top referring sites and countries over the window. Referrers are stored as full URLs;
- * collapsing to hostnames happens here, so the SQL groups on the raw value and this
- * merges rows that share a host.
- */
-export async function formSources(
-  d1: D1Database,
-  formId: string,
-  days = 30,
-  now = Date.now(),
-  limit = 5,
-): Promise<{ referrers: SourceRow[]; countries: SourceRow[] }> {
-  const since = (dayOf(now) - days + 1) * DAY_MS;
-  const [refs, countries] = await Promise.all([
-    d1
-      .prepare(
-        `SELECT referrer AS label, count(*) AS n FROM submissions
-          WHERE form_id = ?1 AND created_at >= ?2 AND status != 'spam'
-          GROUP BY referrer ORDER BY n DESC LIMIT 200`,
-      )
-      .bind(formId, since)
-      .all<{ label: string | null; n: number }>(),
-    d1
-      .prepare(
-        `SELECT country AS label, count(*) AS n FROM submissions
-          WHERE form_id = ?1 AND created_at >= ?2 AND status != 'spam' AND country IS NOT NULL
-          GROUP BY country ORDER BY n DESC LIMIT ?3`,
-      )
-      .bind(formId, since, limit)
-      .all<{ label: string; n: number }>(),
-  ]);
-
-  const byHost = new Map<string, number>();
-  for (const row of refs.results) {
-    const host = referrerHost(row.label);
-    byHost.set(host, (byHost.get(host) ?? 0) + row.n);
-  }
-
-  return {
-    referrers: [...byHost.entries()]
-      .map(([label, count]) => ({ label, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, limit),
-    countries: countries.results.map((r) => ({ label: r.label, count: r.n })),
-  };
-}
-
-export function referrerHost(value: string | null): string {
-  if (!value) return "Direct";
-  try {
-    return new URL(value).hostname.replace(/^www\./, "") || "Direct";
-  } catch {
-    return "Direct";
-  }
-}
-
 export interface LeaderboardRow {
   id: string;
   rank: number;

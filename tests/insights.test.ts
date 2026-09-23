@@ -5,14 +5,7 @@ import { formViews, forms, projects, submissions } from "../src/lib/db/schema";
 import { publicId, ulid } from "../src/lib/ids";
 import { waitlistRank } from "../src/lib/waitlist/rank";
 import { eq } from "drizzle-orm";
-import {
-  DAY_MS,
-  formActivity,
-  formSources,
-  recordView,
-  referrerHost,
-  waitlistSummary,
-} from "../src/lib/insights/form";
+import { DAY_MS, formActivity, recordView, waitlistSummary } from "../src/lib/insights/form";
 
 const db = createDb(env.DB);
 const NOW = Date.UTC(2026, 8, 23, 12);
@@ -70,25 +63,6 @@ describe("formActivity", () => {
   it("has no conversion without views", async () => {
     await sub();
     expect((await formActivity(env.DB, formId, 30, NOW)).conversion).toBeNull();
-  });
-});
-
-describe("formSources", () => {
-  it("merges referrers by host and treats missing as Direct", async () => {
-    await sub({ referrer: "https://www.example.com/a" });
-    await sub({ referrer: "https://example.com/b" });
-    await sub({ referrer: null, country: "EG" });
-
-    const { referrers, countries } = await formSources(env.DB, formId, 30, NOW);
-    expect(referrers).toEqual([
-      { label: "example.com", count: 2 },
-      { label: "Direct", count: 1 },
-    ]);
-    expect(countries).toEqual([{ label: "EG", count: 1 }]);
-  });
-
-  it("never throws on a junk referrer", () => {
-    expect(referrerHost("not a url")).toBe("Direct");
   });
 });
 

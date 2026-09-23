@@ -1,5 +1,4 @@
 import { BRAND } from "@/lib/brand";
-import { BrandMark } from "@/components/brand-mark";
 import { authCardClass } from "@/lib/ui";
 import { FrameHeight } from "@/components/frame-height";
 
@@ -21,16 +20,16 @@ export default async function ThanksPage({
   const needsConfirm = pending === "1";
 
   return (
-    <div className={framed ? "bg-white p-4 dark:bg-ink" : "min-h-dvh bg-mist dark:bg-ink"}>
-      {framed ? (
-        <FrameHeight />
-      ) : (
-        <header className="mx-auto flex h-16 w-full max-w-6xl items-center px-4 sm:px-6">
-          <BrandMark href="/" />
-        </header>
-      )}
-      <main className={framed ? "flex justify-center py-8" : "flex justify-center px-6 py-24"}>
-        <div className={`max-w-md text-center ${framed ? "" : authCardClass}`}>
+    <div
+      className={
+        framed
+          ? "bg-white p-4 dark:bg-neutral-950"
+          : "flex min-h-dvh items-center justify-center bg-neutral-50 px-4 py-12 dark:bg-neutral-950"
+      }
+    >
+      {framed ? <FrameHeight /> : null}
+      <main className="flex w-full justify-center py-4">
+        <div className={`w-full max-w-md text-center ${framed ? "" : authCardClass}`}>
           <h1 className="text-2xl font-semibold tracking-tight">
             {needsConfirm ? "Check your email." : "Thanks — we got it."}
           </h1>

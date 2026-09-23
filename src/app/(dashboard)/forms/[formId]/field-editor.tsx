@@ -1,7 +1,6 @@
 "use client";
 
 import { ChevronDownIcon, ChevronUpIcon, PlusIcon, TrashIcon } from "@/components/icons";
-import { Notice } from "@/components/notice";
 import {
   FIELD_TYPES,
   MAX_FORM_FIELDS,
@@ -9,12 +8,18 @@ import {
   type FieldConfig,
   type FieldType,
 } from "@/lib/submissions/fields";
-import { btnGhost, btnSecondary, cn, hintClass, inputClass, labelClass, selectClass } from "@/lib/ui";
+import { btnGhost, btnIcon, checkboxClass, cn, hintClass, inputBase } from "@/lib/ui";
 
-const SUGGESTIONS: FieldConfig[] = [
-  { name: "company", type: "text", required: false },
-  { name: "phone", type: "tel", required: false },
-];
+/** What people call these, not what HTML calls them. */
+const TYPE_LABEL: Record<FieldType, string> = {
+  text: "Short text",
+  textarea: "Long text",
+  email: "Email",
+  tel: "Phone",
+  number: "Number",
+  url: "Link",
+  file: "File",
+};
 
 type DraftField = FieldConfig & { id: string };
 
@@ -27,13 +32,11 @@ export function FieldEditor({
   onChange,
   mode,
   uploadsAvailable,
-  usingDefaults,
 }: {
   fields: DraftField[];
   onChange: (fields: DraftField[]) => void;
   mode: string;
   uploadsAvailable: boolean;
-  usingDefaults: boolean;
 }) {
   function update(index: number, patch: Partial<FieldConfig>) {
     onChange(fields.map((field, i) => (i === index ? { ...field, ...patch } : field)));
@@ -48,158 +51,120 @@ export function FieldEditor({
     onChange(copy);
   }
 
-  function remove(index: number) {
-    if (fields.length <= 1) return;
-    const next = fields.filter((_, i) => i !== index);
-    if (mode === "waitlist" && !next.some((field) => field.type === "email")) return;
-    onChange(next);
-  }
+  // A waitlist dedupes on email, so its last email field cannot go.
+  const removable = (index: number) =>
+    fields.length > 1 &&
+    !(
+      mode === "waitlist" &&
+      fields[index].type === "email" &&
+      fields.filter((f) => f.type === "email").length === 1
+    );
 
-  function add(field: FieldConfig) {
+  function add() {
     if (fields.length >= MAX_FORM_FIELDS) return;
-    if (fields.some((existing) => existing.name.toLowerCase() === field.name.toLowerCase())) {
-      return;
-    }
-    onChange([...fields, { ...field, id: `f${Date.now()}` }]);
+    const taken = new Set(fields.map((field) => field.name.toLowerCase()));
+    let name = "field";
+    for (let n = 2; taken.has(name); n++) name = `field${n}`;
+    onChange([...fields, { name, type: "text", required: false, id: `f${Date.now()}` }]);
   }
-
-  const missingSuggestions = SUGGESTIONS.filter(
-    (suggestion) => !fields.some((field) => field.name.toLowerCase() === suggestion.name),
-  );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <input
         type="hidden"
         name="fieldsJson"
         value={JSON.stringify(
-          fields.map(({ name, type, required, maxLength }) => ({ name, type, required, maxLength })),
+          fields.map(({ name, type, required, maxLength }) => ({
+            name,
+            type,
+            required,
+            maxLength,
+          })),
         )}
       />
 
-      {usingDefaults ? (
-        <Notice tone="info">Defaults. Add or rename fields, then save so the snippet matches.</Notice>
-      ) : null}
-
-      <div className="rounded-2xl bg-neutral-50 p-1 dark:bg-neutral-950/40">
-        <ul className="flex flex-col gap-1">
-          {fields.map((field, index) => (
-            <li
-              key={field.id}
-              className="rounded-xl bg-white p-3 shadow-[var(--shadow-border)] dark:bg-neutral-900"
+      <ul className="flex flex-col divide-y divide-neutral-100 rounded-xl bg-white shadow-[var(--shadow-border)] dark:divide-neutral-800 dark:bg-neutral-900">
+        {fields.map((field, index) => (
+          <li key={field.id} className="flex flex-wrap items-center gap-2 p-2">
+            <input
+              aria-label="Field name"
+              value={field.name}
+              onChange={(event) => update(index, { name: event.target.value })}
+              className={cn(inputBase, "min-w-40 flex-1 font-mono text-xs")}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <select
+              aria-label="Type"
+              value={field.type}
+              onChange={(event) => update(index, { type: event.target.value as FieldType })}
+              className={cn(inputBase, "w-32 shrink-0")}
             >
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_8rem_auto]">
-                <div className="flex flex-col gap-1">
-                  <label className={labelClass} htmlFor={`field-name-${index}`}>
-                    Field name
-                  </label>
-                  <input
-                    id={`field-name-${index}`}
-                    value={field.name}
-                    onChange={(event) => update(index, { name: event.target.value })}
-                    className={inputClass}
-                    autoComplete="off"
-                    spellCheck={false}
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className={labelClass} htmlFor={`field-type-${index}`}>
-                    Type
-                  </label>
-                  <select
-                    id={`field-type-${index}`}
-                    value={field.type}
-                    onChange={(event) => update(index, { type: event.target.value as FieldType })}
-                    className={selectClass}
-                  >
-                    {FIELD_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-end justify-between gap-3 sm:justify-end">
-                  <label className="flex h-9 items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(field.required)}
-                      onChange={(event) => update(index, { required: event.target.checked })}
-                      className="accent-flare"
-                    />
-                    Required
-                  </label>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      className={btnGhost}
-                      aria-label="Move up"
-                      disabled={index === 0}
-                      onClick={() => move(index, -1)}
-                    >
-                      <ChevronUpIcon />
-                    </button>
-                    <button
-                      type="button"
-                      className={btnGhost}
-                      aria-label="Move down"
-                      disabled={index === fields.length - 1}
-                      onClick={() => move(index, 1)}
-                    >
-                      <ChevronDownIcon />
-                    </button>
-                    <button
-                      type="button"
-                      className={cn(btnGhost, "text-red-700 dark:text-red-400")}
-                      aria-label={`Remove ${field.name}`}
-                      disabled={fields.length <= 1}
-                      onClick={() => remove(index)}
-                    >
-                      <TrashIcon />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              {field.type === "file" && !uploadsAvailable ? (
-                <p className={`mt-2 ${hintClass}`}>
-                  This instance has no R2 bucket, so a file field will reject the upload.
-                </p>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          className={btnSecondary}
-          disabled={fields.length >= MAX_FORM_FIELDS}
-          onClick={() => add({ name: uniqueName(fields, "field"), type: "text", required: false })}
-        >
-          <PlusIcon />
-          Add field
-        </button>
-        {missingSuggestions.map((suggestion) => (
-          <button
-            key={suggestion.name}
-            type="button"
-            className={btnGhost}
-            onClick={() => add(suggestion)}
-          >
-            Add {suggestion.name}
-          </button>
+              {FIELD_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {TYPE_LABEL[type]}
+                </option>
+              ))}
+            </select>
+            <label className="flex shrink-0 items-center gap-1.5 px-1 text-xs text-neutral-600 dark:text-neutral-300">
+              <input
+                type="checkbox"
+                checked={Boolean(field.required)}
+                onChange={(event) => update(index, { required: event.target.checked })}
+                className={checkboxClass}
+              />
+              Required
+            </label>
+            <div className="flex shrink-0 items-center">
+              <button
+                type="button"
+                className={btnIcon}
+                aria-label="Move up"
+                disabled={index === 0}
+                onClick={() => move(index, -1)}
+              >
+                <ChevronUpIcon />
+              </button>
+              <button
+                type="button"
+                className={btnIcon}
+                aria-label="Move down"
+                disabled={index === fields.length - 1}
+                onClick={() => move(index, 1)}
+              >
+                <ChevronDownIcon />
+              </button>
+              <button
+                type="button"
+                className={btnIcon}
+                aria-label={`Remove ${field.name}`}
+                disabled={!removable(index)}
+                onClick={() => onChange(fields.filter((_, i) => i !== index))}
+              >
+                <TrashIcon />
+              </button>
+            </div>
+            {field.type === "file" && !uploadsAvailable ? (
+              <p className={`${hintClass} w-full px-1`}>
+                File uploads are off on this install, so this field will be rejected.{" "}
+                <a href="https://github.com/SeifElkadyy/FormFlare#how-do-i-enable-file-uploads">
+                  Turn them on
+                </a>
+              </p>
+            ) : null}
+          </li>
         ))}
-      </div>
-      <p className={hintClass}>Names you add only in your own HTML still reach the endpoint.</p>
+      </ul>
+
+      <button
+        type="button"
+        className={cn(btnGhost, "self-start")}
+        disabled={fields.length >= MAX_FORM_FIELDS}
+        onClick={add}
+      >
+        <PlusIcon />
+        Add field
+      </button>
     </div>
   );
-}
-
-function uniqueName(fields: DraftField[], base: string): string {
-  const taken = new Set(fields.map((field) => field.name.toLowerCase()));
-  if (!taken.has(base)) return base;
-  let n = 2;
-  while (taken.has(`${base}${n}`)) n += 1;
-  return `${base}${n}`;
 }

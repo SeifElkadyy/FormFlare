@@ -25,7 +25,7 @@ export async function createKeyAction(
   // Key creation and revocation are security events: an unexplained key is the first
   // sign of a compromised dashboard session.
   await audit(db, user.id, "api_key.create", { keyId: key.id, name, prefix: key.prefix });
-  revalidatePath("/api-keys");
+  revalidatePath("/settings");
 
   // Shown once; only the SHA-256 is stored.
   return { created: { plaintext: key.plaintext } };
@@ -41,5 +41,5 @@ export async function revokeKeyAction(formData: FormData): Promise<void> {
 
   await revokeApiKey(db, id);
   await audit(db, user.id, "api_key.revoke", { keyId: id, name: rows[0].name });
-  revalidatePath("/api-keys");
+  revalidatePath("/settings");
 }

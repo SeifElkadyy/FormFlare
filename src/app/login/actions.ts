@@ -51,7 +51,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     maxAge: SESSION_TTL_MS / 1000,
   });
 
-  redirect("/home");
+  redirect("/forms");
 }
 
 export async function logoutAction(): Promise<void> {

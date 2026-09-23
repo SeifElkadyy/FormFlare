@@ -13,7 +13,7 @@ export default async function LoginPage() {
   const env = await getEnv();
 
   if (!(await anyUserExists(env.DB))) redirect("/setup");
-  if (await currentUser()) redirect("/home");
+  if (await currentUser()) redirect("/forms");
 
   return (
     <AuthShell>

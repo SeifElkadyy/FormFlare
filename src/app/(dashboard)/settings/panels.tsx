@@ -10,19 +10,18 @@ import {
 } from "./actions";
 import { LocalTime } from "../inbox/local-time";
 import { Notice } from "@/components/notice";
+import { Section } from "@/components/section";
 import {
   alertClass,
   btnDanger,
   btnGhost,
   btnPrimary,
   btnSecondary,
-  cardClass,
   cn,
   errorClass,
   hintClass,
   inputClass,
   labelClass,
-  sectionTitle,
   successClass,
 } from "@/lib/ui";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password";
@@ -51,14 +50,11 @@ export function EmailSettingsForm({
   );
 
   return (
-    <section id="email" className={`${cardClass} flex scroll-mt-6 flex-col gap-4`}>
-      <div>
-        <h2 className={sectionTitle}>Email</h2>
-        <p className={`mt-1 ${hintClass}`}>
-          Submissions always appear in Inbox. You do not connect Gmail or Outlook.
-        </p>
-      </div>
-
+    <Section
+      id="email"
+      title="Email"
+      description="Optional. Turn it on to get alerts, send auto-replies and waitlist confirmations. Submissions always land in Inbox either way."
+    >
       {setup ? (
         <form action={action} className="flex flex-col gap-4">
           <input type="hidden" name="mailProvider" value={choice} />
@@ -175,16 +171,20 @@ export function EmailSettingsForm({
       ) : (
         <>
           <Notice tone="info">
-            Leave this off if you only want Inbox. Turn it on to get an alert when someone
-            submits, or to send waitlist confirmations.
+            Leave this off if you only want Inbox. Turn it on to get an alert when someone submits,
+            or to send waitlist confirmations.
           </Notice>
-          <button type="button" className={`${btnPrimary} self-start`} onClick={() => setSetup(true)}>
+          <button
+            type="button"
+            className={`${btnPrimary} self-start`}
+            onClick={() => setSetup(true)}
+          >
             Turn on sending
           </button>
           <FormMessage state={state} />
         </>
       )}
-    </section>
+    </Section>
   );
 }
 
@@ -221,15 +221,9 @@ export function AccountPanel({ email }: { email: string }) {
   const [state, action, pending] = useActionState(changePasswordAction, empty);
 
   return (
-    <section className={`${cardClass} flex flex-col gap-3`}>
-      <h2 className={sectionTitle}>Account</h2>
-      <p className="text-sm text-neutral-800 dark:text-neutral-200">{email}</p>
-      <p className={hintClass}>This is how you sign in. It is not a connected mailbox.</p>
-
-      <details className="rounded-xl bg-neutral-50 px-3 py-2 dark:bg-neutral-950/40">
-        <summary className="cursor-pointer text-sm font-medium text-neutral-700 dark:text-neutral-200">
-          Change password
-        </summary>
+    <Section id="account" title="Account" description={`Signed in as ${email}.`}>
+      <details>
+        <summary className="cursor-pointer text-sm font-medium">Change password</summary>
         <form action={action} className="mt-3 flex flex-col gap-3">
           <div className="flex flex-col gap-1">
             <label htmlFor="currentPassword" className={labelClass}>
@@ -278,7 +272,7 @@ export function AccountPanel({ email }: { email: string }) {
           </button>
         </form>
       </details>
-    </section>
+    </Section>
   );
 }
 
@@ -300,8 +294,7 @@ export function InstancePanel({
   const [state, action, pending] = useActionState(checkUpdatesAction, empty);
 
   return (
-    <section id="updates" className={`${cardClass} flex flex-col gap-3`}>
-      <h2 className={sectionTitle}>This instance</h2>
+    <Section id="updates" title="Updates and data">
       <p className="text-sm text-neutral-700 dark:text-neutral-300">
         FormFlare {current}
         {newer && latest ? ` — ${latest} is available` : latest ? ", up to date" : ""}
@@ -333,12 +326,12 @@ export function InstancePanel({
         </form>
         <form action="/settings/export" method="POST">
           <button type="submit" className={btnGhost}>
-            Export JSON
+            Download all data (JSON)
           </button>
         </form>
       </div>
       <FormMessage state={state} />
-    </section>
+    </Section>
   );
 }
 
@@ -346,36 +339,38 @@ export function DangerZone({ email }: { email: string }) {
   const [state, action, pending] = useActionState(deleteAccountAction, empty);
 
   return (
-    <details className={`${cardClass} border-0`}>
-      <summary className="cursor-pointer text-[13px] font-medium text-red-700 dark:text-red-400">
-        Delete this instance
-      </summary>
-      <div className="mt-3 flex flex-col gap-3">
-        <p className={hintClass}>
-          Removes the account, every form, submission, file, webhook, API key and setting.{" "}
-          <code>/setup</code> works again. This cannot be undone.
-        </p>
-        <form action={action} className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1">
-            <label htmlFor="confirmEmail" className={labelClass}>
-              Type {email} to confirm
-            </label>
-            <input
-              id="confirmEmail"
-              name="confirmEmail"
-              type="email"
-              required
-              autoComplete="off"
-              className={inputClass}
-            />
-          </div>
-          <FormMessage state={state} />
-          <button type="submit" disabled={pending} className={`${btnDanger} self-start`}>
-            {pending ? "Deleting…" : "Delete account and all data"}
-          </button>
-        </form>
-      </div>
-    </details>
+    <Section id="delete" title="Delete everything">
+      <details>
+        <summary className="cursor-pointer text-sm font-medium text-red-700 dark:text-red-400">
+          Delete this instance
+        </summary>
+        <div className="mt-3 flex flex-col gap-3">
+          <p className={hintClass}>
+            Removes the account, every form, submission, file, webhook, API key and setting.{" "}
+            <code>/setup</code> works again. This cannot be undone.
+          </p>
+          <form action={action} className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="confirmEmail" className={labelClass}>
+                Type {email} to confirm
+              </label>
+              <input
+                id="confirmEmail"
+                name="confirmEmail"
+                type="email"
+                required
+                autoComplete="off"
+                className={inputClass}
+              />
+            </div>
+            <FormMessage state={state} />
+            <button type="submit" disabled={pending} className={`${btnDanger} self-start`}>
+              {pending ? "Deleting…" : "Delete account and all data"}
+            </button>
+          </form>
+        </div>
+      </details>
+    </Section>
   );
 }
 

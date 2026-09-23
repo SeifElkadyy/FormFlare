@@ -35,7 +35,7 @@ bring back files you deleted.
 
 ## Longer than 7 or 30 days: export
 
-**Settings → Export JSON** downloads every form and submission. Keep a copy somewhere
+**Settings → Download all data (JSON)** downloads every form and submission. Keep a copy somewhere
 that isn't Cloudflare. **Inbox → Export CSV** exports whatever the current filters show,
 ready for a spreadsheet.
 

@@ -1,15 +1,19 @@
-import { desc } from "drizzle-orm";
+import { count, desc, eq, max } from "drizzle-orm";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth/guard";
-import { forms } from "@/lib/db/schema";
-import { getServices } from "@/lib/env";
-import { PageHeader } from "@/components/page-header";
+import { dashboardAlerts, loadAlertState } from "@/lib/dashboard/alerts";
+import { forms, submissions } from "@/lib/db/schema";
+import { getEnv, getServices } from "@/lib/env";
+import { mailerStatus } from "@/lib/platform/resolve-mailer";
 import { ChevronRightIcon } from "@/components/icons";
-import { emptyClass, hintClass } from "@/lib/ui";
-import { CreateFormDialog } from "./create-form";
+import { PageBody, PageHeader } from "@/components/page-header";
+import { alertClass, pillClass } from "@/lib/ui";
+import { LocalTime } from "../inbox/local-time";
+import { CreateFormDialog, CreateFormFields } from "./create-form";
 
 export const dynamic = "force-dynamic";
 
+/** The landing page after sign-in: your forms, and anything that is broken. */
 export default async function FormsPage({
   searchParams,
 }: {
@@ -17,72 +21,111 @@ export default async function FormsPage({
 }) {
   await requireUser();
   const { db } = await getServices();
+  const env = await getEnv();
   const params = await searchParams;
 
-  const rows = await db.select().from(forms).orderBy(desc(forms.createdAt));
+  const [rows, unread, latest, mail] = await Promise.all([
+    db.select().from(forms).orderBy(desc(forms.createdAt)),
+    db
+      .select({ formId: submissions.formId, n: count() })
+      .from(submissions)
+      .where(eq(submissions.status, "new"))
+      .groupBy(submissions.formId),
+    db
+      .select({ formId: submissions.formId, at: max(submissions.createdAt) })
+      .from(submissions)
+      .groupBy(submissions.formId),
+    mailerStatus(db, env),
+  ]);
+  const alerts = dashboardAlerts(await loadAlertState(db, mail.available));
+  const unreadBy = new Map(unread.map((r) => [r.formId, Number(r.n)]));
+  const latestBy = new Map(latest.map((r) => [r.formId, r.at]));
+
+  if (rows.length === 0) {
+    return (
+      <PageBody narrow className="py-10">
+        <h1 className="text-xl font-semibold tracking-tight">Create your first form</h1>
+        <p className="mt-1 mb-6 text-sm text-neutral-500">
+          You&rsquo;ll get a page to share and code for your own site. It takes a few seconds.
+        </p>
+        <CreateFormFields />
+      </PageBody>
+    );
+  }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <PageHeader
-        title="Forms"
-        description="Each form gets an endpoint. Put your own HTML on your site, or copy a snippet."
-        count={rows.length}
-        actions={<CreateFormDialog defaultOpen={params.new === "1"} />}
-      />
+    <>
+      <PageHeader title="Forms" actions={<CreateFormDialog defaultOpen={params.new === "1"} />} />
+      <PageBody className="flex flex-col gap-4">
+        {alerts.map((alert) => (
+          <p
+            key={alert.id}
+            className={`${alertClass} flex flex-wrap items-center justify-between gap-2`}
+          >
+            <span>{alert.message}</span>
+            <Link href={alert.href} className="font-medium">
+              {alert.cta}
+            </Link>
+          </p>
+        ))}
 
-      {rows.length === 0 ? (
-        <p className={emptyClass}>
-          No forms yet. Press <strong>New form</strong> for an endpoint and snippets (HTML, fetch,
-          or React) to paste into your site.
-        </p>
-      ) : (
-        <ul className="grid grid-cols-1 gap-3 p-6 sm:grid-cols-2">
+        <ul className="divide-y divide-neutral-100 overflow-hidden rounded-xl bg-white shadow-[var(--shadow-border)] dark:divide-neutral-800 dark:bg-neutral-900">
           {rows.map((form) => {
-            const initial = (form.name.trim()[0] ?? "F").toUpperCase();
+            const newCount = unreadBy.get(form.id) ?? 0;
+            const last = latestBy.get(form.id);
             return (
               <li key={form.id}>
                 <Link
                   href={`/forms/${form.id}`}
-                  className="row-hover surface flex h-full flex-col rounded-2xl p-4 no-underline"
+                  className="flex items-center gap-4 px-4 py-3.5 no-underline hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                 >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-flare-soft text-sm font-semibold text-ink dark:text-mist"
-                      aria-hidden
-                    >
-                      {initial}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-neutral-950 dark:text-white">
-                        {form.name}
-                      </p>
-                      <p className={`mt-0.5 truncate font-mono ${hintClass}`}>/f/{form.publicId}</p>
-                    </div>
-                    <span className="translate-x-px pt-1 text-neutral-400">
-                      <ChevronRightIcon />
-                    </span>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between gap-3 text-xs text-neutral-500">
+                  <span
+                    className={`size-2 shrink-0 rounded-full ${form.active ? "bg-emerald-500" : "bg-neutral-300 dark:bg-neutral-600"}`}
+                    aria-label={form.active ? "Live" : "Paused"}
+                  />
+                  <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
-                      <span
-                        className={`size-1.5 rounded-full ${form.active ? "bg-emerald-500" : "bg-neutral-300 dark:bg-neutral-600"}`}
-                        aria-hidden
-                      />
-                      {form.active ? "Live" : "Paused"}
-                      <span aria-hidden>·</span>
-                      {form.mode === "waitlist" ? "Waitlist" : "Standard"}
+                      <span className="truncate text-sm font-medium text-ink dark:text-mist">
+                        {form.name}
+                      </span>
+                      {form.mode === "waitlist" ? (
+                        <span className={pillClass}>Waitlist</span>
+                      ) : null}
+                      {!form.active ? (
+                        <span className="text-xs text-neutral-400">Paused</span>
+                      ) : null}
                     </span>
-                    <span className="tabular-nums">
-                      {form.submissionCount}{" "}
-                      {form.submissionCount === 1 ? "submission" : "submissions"}
+                    <span className="mt-0.5 block text-xs text-neutral-500">
+                      {form.submissionCount === 0 ? (
+                        "No submissions yet"
+                      ) : (
+                        <>
+                          {form.submissionCount}{" "}
+                          {form.submissionCount === 1 ? "submission" : "submissions"}
+                          {last ? (
+                            <>
+                              {" · last "}
+                              <LocalTime timestamp={last} />
+                            </>
+                          ) : null}
+                        </>
+                      )}
                     </span>
-                  </div>
+                  </span>
+                  {newCount > 0 ? (
+                    <span className="rounded-full bg-ink px-2 py-0.5 text-xs font-medium tabular-nums text-white dark:bg-mist dark:text-ink">
+                      {newCount} new
+                    </span>
+                  ) : null}
+                  <span className="text-neutral-400">
+                    <ChevronRightIcon />
+                  </span>
                 </Link>
               </li>
             );
           })}
         </ul>
-      )}
-    </div>
+      </PageBody>
+    </>
   );
 }

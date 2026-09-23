@@ -6,9 +6,11 @@ import { LocalTime } from "./local-time";
 import { CopyButton } from "@/components/copy-button";
 import { Notice } from "@/components/notice";
 import { ArchiveIcon, MailOpenIcon, SpamIcon, TrashIcon } from "@/components/icons";
-import { btnDanger, btnIcon, btnToolbar, pillClass } from "@/lib/ui";
+import { btnDanger, btnIcon, btnToolbar } from "@/lib/ui";
 
 interface Props {
+  /** Show which form it came from (the all-forms Inbox), not inside a form's own tab. */
+  showForm?: boolean;
   submission: {
     id: string;
     formName: string;
@@ -22,73 +24,65 @@ interface Props {
   };
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  new: "New",
-  read: "Read",
-  archived: "Archived",
-  spam: "Spam",
-};
-
-export function SubmissionCard({ submission }: Props) {
+export function SubmissionCard({ submission, showForm = true }: Props) {
   const [open, setOpen] = useState(false);
   const data = safeParse(submission.dataJson);
   const preview = firstPreview(data);
   const unread = submission.status === "new";
 
   return (
-    <li className="group relative border-b border-neutral-100 last:border-b-0 dark:border-neutral-800">
-      {unread ? <span className="absolute inset-y-3 left-0 w-0.5 rounded-full bg-flare" aria-hidden /> : null}
-
-      <div className="row-hover flex items-stretch">
+    <li className="group relative border-b border-neutral-100 bg-white last:border-b-0 dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="flex items-stretch hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
         <button
           type="button"
-          className="flex min-w-0 flex-1 items-center gap-3 px-6 py-3.5 text-left sm:pr-44"
+          className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left sm:pr-40"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
         >
           <span
-            className={`size-2 shrink-0 rounded-full ${unread ? "bg-flare" : "bg-neutral-300 dark:bg-neutral-600"}`}
-            aria-hidden
+            className={`size-1.5 shrink-0 rounded-full ${unread ? "bg-ink dark:bg-mist" : "bg-transparent"}`}
+            aria-label={unread ? "Unread" : undefined}
           />
-          <span className="grid min-w-0 flex-1 grid-cols-1 items-center gap-x-4 sm:grid-cols-[minmax(0,220px)_minmax(0,1fr)_auto]">
+          <span className="grid min-w-0 flex-1 grid-cols-1 items-center gap-x-4 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_auto]">
             <span
-              className={`truncate text-sm ${unread ? "font-semibold text-neutral-950 dark:text-white" : "text-neutral-700 dark:text-neutral-200"}`}
+              className={`truncate text-sm ${unread ? "font-semibold text-ink dark:text-mist" : "text-neutral-700 dark:text-neutral-300"}`}
             >
-              {submission.email ?? "(no email)"}
+              {submission.email ?? "No email"}
               {submission.confirmUrl ? (
-                <span className="ml-2 font-medium text-amber-800 dark:text-amber-200">Unconfirmed</span>
+                <span className="ms-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+                  Unconfirmed
+                </span>
               ) : null}
             </span>
             <span className="hidden truncate text-sm text-neutral-500 sm:block">
-              {submission.formName}
-              {submission.waitlistPosition !== null ? ` · #${submission.waitlistPosition}` : ""}
-              {preview ? ` — ${preview}` : ""}
+              {showForm ? `${submission.formName} · ` : ""}
+              {submission.waitlistPosition !== null ? `#${submission.waitlistPosition} · ` : ""}
+              {preview}
             </span>
-            <span className="hidden items-center gap-3 sm:flex">
-              <span className={`${pillClass} ${open ? "" : "hover-fade"}`}>
-                {STATUS_LABEL[submission.status] ?? submission.status}
-              </span>
-              <time className={`text-xs tabular-nums text-neutral-400 ${open ? "" : "hover-fade"}`}>
-                <LocalTime timestamp={submission.createdAt} />
-              </time>
-            </span>
+            <time
+              className={`hidden text-xs tabular-nums text-neutral-400 sm:block ${open ? "" : "hover-fade"}`}
+            >
+              <LocalTime timestamp={submission.createdAt} />
+            </time>
           </span>
         </button>
 
         {open ? null : (
-          <div className="hover-reveal absolute inset-y-0 right-5 flex items-center gap-3">
+          <div className="hover-reveal absolute inset-y-0 right-3 flex items-center gap-1">
             <RowActions submission={submission} compact />
           </div>
         )}
       </div>
 
       {open ? (
-        <div className="px-6 pb-4">
-          <dl className="rounded-xl bg-neutral-50 px-4 py-1 dark:bg-neutral-950/50">
+        <div className="px-4 pb-4 ps-8">
+          <dl className="rounded-lg bg-neutral-50 px-4 py-1 dark:bg-neutral-950/50">
             {Object.entries(data).map(([key, value]) => (
               <div key={key} className="flex gap-4 py-2.5">
                 <dt className="w-28 shrink-0 text-xs font-medium text-neutral-400">{key}</dt>
-                <dd className="break-all text-sm text-neutral-800 dark:text-neutral-200">{String(value)}</dd>
+                <dd className="break-all text-sm text-neutral-800 dark:text-neutral-200">
+                  {String(value)}
+                </dd>
               </div>
             ))}
           </dl>
@@ -124,7 +118,7 @@ function RowActions({
   compact?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-1">
       {submission.status !== "read" ? (
         <StatusButton
           id={submission.id}
@@ -144,7 +138,13 @@ function RowActions({
         />
       ) : null}
       {submission.status !== "spam" ? (
-        <StatusButton id={submission.id} status="spam" label="Spam" icon={<SpamIcon />} compact={compact} />
+        <StatusButton
+          id={submission.id}
+          status="spam"
+          label="Spam"
+          icon={<SpamIcon />}
+          compact={compact}
+        />
       ) : null}
       <form action={deleteSubmissionAction}>
         <input type="hidden" name="id" value={submission.id} />
@@ -174,7 +174,12 @@ function StatusButton({
     <form action={setStatusAction}>
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="status" value={status} />
-      <button type="submit" className={compact ? btnIcon : btnToolbar} aria-label={label} title={label}>
+      <button
+        type="submit"
+        className={compact ? btnIcon : btnToolbar}
+        aria-label={label}
+        title={label}
+      >
         {icon}
         {compact ? null : label}
       </button>

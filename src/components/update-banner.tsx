@@ -10,13 +10,7 @@ function subscribe(onStoreChange: () => void) {
   return () => window.removeEventListener("storage", onStoreChange);
 }
 
-export function UpdateBanner({
-  latest,
-  htmlUrl,
-}: {
-  latest: string;
-  htmlUrl: string | null;
-}) {
+export function UpdateBanner({ latest, htmlUrl }: { latest: string; htmlUrl: string | null }) {
   const dismissed = useSyncExternalStore(
     subscribe,
     () => localStorage.getItem(STORAGE_KEY),
@@ -32,7 +26,7 @@ export function UpdateBanner({
   if (!visible) return null;
 
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-flare/20 bg-flare-soft px-4 py-2 text-sm text-ink dark:text-mist">
+    <div className="flex items-center justify-between gap-3 border-b border-neutral-200 bg-neutral-50 px-4 py-2 text-sm text-ink dark:border-neutral-800 dark:bg-neutral-900 dark:text-mist">
       <p>
         FormFlare {latest} is available.{" "}
         <a href="/settings#updates" className="font-medium underline">
