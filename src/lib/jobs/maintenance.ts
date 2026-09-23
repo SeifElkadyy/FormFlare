@@ -32,6 +32,15 @@ export async function runRecoverySweep(env: CloudflareEnv): Promise<void> {
 }
 
 /**
+ * Is this run of the 15-minute cron the daily one? True for the slot starting 03:00 UTC.
+ * A range rather than an exact minute, so a run scheduled late still counts once.
+ */
+export function isDailySlot(scheduledTime: number): boolean {
+  const at = new Date(scheduledTime);
+  return at.getUTCHours() === 3 && at.getUTCMinutes() < 15;
+}
+
+/**
  * Daily cron maintenance.
  *
  * Each step is independent and failure-isolated: a failing sweep must not stop expired

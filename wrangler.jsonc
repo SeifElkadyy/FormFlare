@@ -80,7 +80,9 @@
     "APP_NAME": "FormFlare"
   },
 
-  // Every 15 minutes: re-enqueue work stranded by an evicted Worker or a lost message.
-  // Daily at 03:00: expired sessions, old delivery logs, orphaned R2 objects.
-  "triggers": { "crons": ["*/15 * * * *", "0 3 * * *"] }
+  // ONE schedule on purpose: the Workers Free plan allows 5 cron triggers per *account*,
+  // so two per install left room for only two installs (plus anything else the deployer
+  // runs) before the deploy failed. Every 15 minutes re-enqueues stranded work; the run
+  // that lands in the 03:00 UTC slot also does daily maintenance. See worker.ts.
+  "triggers": { "crons": ["*/15 * * * *"] }
 }

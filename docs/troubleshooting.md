@@ -21,6 +21,26 @@ Nothing in FormFlare can prevent this — the empty commit is created and built 
 Cloudflare before our code exists in your repository. Once you are past it, subsequent
 builds are unaffected.
 
+## Deploy fails with "already has a consumer" or "limit of 5 cron triggers"
+
+You are deploying a **second** FormFlare into an account that already has one, and kept
+the default resource names on the Deploy page.
+
+- **"Queue 'formflare-jobs' … already has a consumer"** — a queue can feed only one
+  Worker, and the existing install owns it.
+- **The database is shared too, silently.** The new install reuses the existing
+  `formflare` D1 database, so it sees the other install's owner and data, and `/setup`
+  reports that setup is already complete.
+- **"reached the Workers Free limit of 5 cron triggers per account"** — each install
+  uses one cron trigger, and the free plan allows five per account, shared with every
+  other Worker you run.
+
+**Fix:** deploy again and, on the Deploy page, give the **database** and the **queue**
+new names (for example `formflare-2` and `formflare-2-jobs`). Or, in the new repository,
+change `database_name` and `queue` in `wrangler.jsonc` and remove the `database_id`
+line so a fresh database is created, then push. If you hit the cron limit, delete an
+unused Worker or move to Workers Paid.
+
 ## I'm locked out of my admin account
 
 FormFlare has no "forgot password" email flow — that would require a configured mailer,

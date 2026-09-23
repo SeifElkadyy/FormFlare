@@ -92,5 +92,5 @@
     "APP_NAME": "FormFlare (dev)"
   },
 
-  "triggers": { "crons": ["*/15 * * * *", "0 3 * * *"] }
+  "triggers": { "crons": ["*/15 * * * *"] }
 }

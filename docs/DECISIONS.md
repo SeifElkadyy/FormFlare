@@ -31,6 +31,27 @@ Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
 
 ---
 
+## 2026-09-23 — One cron trigger per install
+
+A real Deploy-button install failed at `wrangler deploy` with "reached the Workers Free
+limit of 5 cron triggers per account". The limit is **per account**, not per Worker, and
+every install registered two schedules (`*/15 * * * *` and `0 3 * * *`). Two installs
+plus one other scheduled Worker used up the account.
+
+Now one schedule, `*/15 * * * *`. Every run does the recovery sweep; the run whose
+`scheduledTime` falls in 03:00–03:14 UTC also runs daily maintenance (`isDailySlot`).
+Daily maintenance therefore runs after, not instead of, the 03:00 recovery sweep.
+
+The same install also exposed the resource-name clash: with default names, a second
+install in one account reuses the `formflare` database (silently) and the
+`formflare-jobs` queue (which fails, since a queue has one consumer). Names in
+`wrangler.jsonc` are static, so this cannot be made unique in code; it is documented in
+troubleshooting instead. That run did **not** hit "Could not read package.json" — the
+first build cloned real code — so the FAQ entry about it stays until it has been gone
+for a few more installs.
+
+---
+
 ## 2026-09-23 — Instance root, body cap, waitlist decoys
 
 **`/` redirects to `/login`.** The root used to be a marketing hero with sample inbox

@@ -5,7 +5,7 @@
 // @ts-ignore
 import { default as nextHandler } from "./.open-next/worker.js";
 import { consumeJobs } from "./src/lib/jobs/consumer";
-import { runDailyMaintenance, runRecoverySweep } from "./src/lib/jobs/maintenance";
+import { isDailySlot, runDailyMaintenance, runRecoverySweep } from "./src/lib/jobs/maintenance";
 import { handlePublicBadge, handlePublicCount } from "./src/lib/submissions/count";
 import { handleSubmission } from "./src/lib/submissions/handle";
 
@@ -39,12 +39,10 @@ export default {
     env: CloudflareEnv,
     ctx: ExecutionContext,
   ): Promise<void> {
-    // Two schedules, different jobs. The frequent one only re-enqueues stranded work;
-    // the daily one does the expensive sweeps.
-    if (event.cron === "0 3 * * *") {
-      ctx.waitUntil(runDailyMaintenance(env));
-    } else {
-      ctx.waitUntil(runRecoverySweep(env));
-    }
+    // One schedule (every 15 minutes) to stay inside the free plan's per-account cron
+    // limit. Every run re-enqueues stranded work; the one in the 03:00 UTC slot also
+    // does the expensive daily sweeps.
+    ctx.waitUntil(runRecoverySweep(env));
+    if (isDailySlot(event.scheduledTime)) ctx.waitUntil(runDailyMaintenance(env));
   },
 } satisfies ExportedHandler<CloudflareEnv>;

@@ -15,6 +15,7 @@ import { SETTING, setSetting } from "../src/lib/db/settings";
 import { encryptSecret } from "../src/lib/crypto/secrets";
 import { publicId as newPublicId, ulid } from "../src/lib/ids";
 import { consumeJobs } from "../src/lib/jobs/consumer";
+import { isDailySlot } from "../src/lib/jobs/maintenance";
 import { fanOutSubmission, AUTO_REPLY_WINDOW_MS } from "../src/lib/jobs/fanout";
 import { pruneDeliveryLogs, DELIVERY_LOG_RETENTION_MS } from "../src/lib/jobs/maintenance";
 import type { Job } from "../src/lib/jobs/types";
@@ -505,5 +506,16 @@ describe("pruneDeliveryLogs", () => {
 
     await pruneDeliveryLogs(db, Date.now());
     expect(await db.select().from(emailDeliveries)).toHaveLength(1);
+  });
+});
+
+describe("isDailySlot", () => {
+  it("fires once a day, in the 03:00 UTC slot of the 15-minute cron", () => {
+    const at = (iso: string) => Date.parse(iso);
+    expect(isDailySlot(at("2026-09-23T03:00:00Z"))).toBe(true);
+    expect(isDailySlot(at("2026-09-23T03:14:59Z"))).toBe(true);
+    expect(isDailySlot(at("2026-09-23T03:15:00Z"))).toBe(false);
+    expect(isDailySlot(at("2026-09-23T02:45:00Z"))).toBe(false);
+    expect(isDailySlot(at("2026-09-23T15:00:00Z"))).toBe(false);
   });
 });
