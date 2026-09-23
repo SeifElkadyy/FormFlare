@@ -5,10 +5,10 @@ Format: date — what — why.
 
 ---
 
-## Current state (2026-09-17)
+## Current state (2026-09-23)
 
-**v0.2.0 is the current release.** MIT. Repo: https://github.com/SeifElkadyy/FormFlare
-— annotated tag `v0.2.0` on `main`. v0.1.0 remains at `d137ae8`.
+**v0.2.1 is the current release.** MIT. Repo: https://github.com/SeifElkadyy/FormFlare
+— annotated tag `v0.2.1` on `main`. Earlier: v0.2.0 at `f8c8823`, v0.1.0 at `d137ae8`.
 
 Phases **0–6 are done**. That is the v1 product from the plan: Deploy to Cloudflare
 button, `/setup` wizard, projects/forms, `POST /f/:publicId`, waitlists, spam layers,
@@ -17,7 +17,7 @@ cloned copies. R2 is optional so the button never asks for a payment card. Email
 Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
 `wrangler.jsonc`.
 
-**Open** (not blockers for v0.1.0): see **Next up**.
+**Open**: see **Next up**.
 
 ## Next up
 
