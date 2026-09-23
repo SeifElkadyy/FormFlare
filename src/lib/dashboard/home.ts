@@ -1,8 +1,9 @@
 /**
  * What the dashboard home should say next.
  *
- * Ordered by how stuck the owner is: no form, then nothing arriving, then
- * confirmations that will never send, then mail they turned on without a mailer.
+ * Ordered by how stuck the owner is: no form, then deliveries silently failing, then
+ * confirmations that will never send, then nothing arriving, then mail they turned on
+ * without a mailer.
  * Cap at two so the page stays a launch pad, not a wall of notices.
  */
 export const HOME_INSIGHT_LIMIT = 2;
@@ -35,7 +36,21 @@ export interface HomeSnapshot {
   latestForm: { id: string; name: string } | null;
   unconfiguredForm: { id: string; name: string } | null;
   doubleOptInForm: { id: string; name: string } | null;
+  /** Webhook deliveries that gave up, within FAILURE_WINDOW_MS. */
+  failedWebhookCount: number;
+  /** Emails that gave up, within FAILURE_WINDOW_MS. */
+  failedEmailCount: number;
 }
+
+/** Failures older than this are history, not something to act on. */
+export const FAILURE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Oldest `updated_at` that still counts as a recent failure. */
+export function failureCutoff(now = Date.now()): number {
+  return now - FAILURE_WINDOW_MS;
+}
+
+const plural = (n: number, one: string, many: string) => (n === 1 ? `1 ${one}` : `${n} ${many}`);
 
 export function homeInsights(state: HomeSnapshot): HomeInsight[] {
   const items: HomeInsight[] = [];
@@ -50,6 +65,29 @@ export function homeInsights(state: HomeSnapshot): HomeInsight[] {
       cta: "New form",
     });
     return items.slice(0, HOME_INSIGHT_LIMIT);
+  }
+
+  // Nobody reads a delivery log unprompted, so a dead webhook would otherwise stay dead.
+  if (state.failedWebhookCount > 0) {
+    items.push({
+      id: "webhook-failures",
+      tone: "warning",
+      title: `${plural(state.failedWebhookCount, "webhook delivery", "webhook deliveries")} failed this week`,
+      body: "The receiving endpoint rejected them or never answered. The delivery log shows the error.",
+      href: "/webhooks",
+      cta: "See deliveries",
+    });
+  }
+
+  if (state.failedEmailCount > 0) {
+    items.push({
+      id: "email-failures",
+      tone: "warning",
+      title: `${plural(state.failedEmailCount, "email", "emails")} failed to send this week`,
+      body: "Usually a sender address the provider has not verified, or an expired API key.",
+      href: "/settings#email",
+      cta: "Check email",
+    });
   }
 
   if (state.doubleOptInForm && !state.mailerAvailable) {

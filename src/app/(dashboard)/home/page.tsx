@@ -1,8 +1,8 @@
-import { count, desc, eq, isNull } from "drizzle-orm";
+import { and, count, desc, eq, gt, isNull } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/guard";
-import { forms, submissions, webhooks } from "@/lib/db/schema";
+import { emailDeliveries, forms, submissions, webhookDeliveries, webhooks } from "@/lib/db/schema";
 import { getEnv, getServices } from "@/lib/env";
-import { homeChecklist, homeInsights } from "@/lib/dashboard/home";
+import { failureCutoff, homeChecklist, homeInsights } from "@/lib/dashboard/home";
 import { mailerStatus } from "@/lib/platform/resolve-mailer";
 import { parseFields } from "@/lib/submissions/fields";
 import { CreateFormDialog } from "../forms/create-form";
@@ -15,31 +15,40 @@ export default async function DashboardHomePage() {
   const { db } = await getServices();
   const env = await getEnv();
 
-  const [formRows, recent, unread, pending, webhookRows, mail] = await Promise.all([
-    db.select().from(forms).orderBy(desc(forms.updatedAt)),
-    db
-      .select({
-        id: submissions.id,
-        email: submissions.email,
-        status: submissions.status,
-        createdAt: submissions.createdAt,
-        formName: forms.name,
-      })
-      .from(submissions)
-      .innerJoin(forms, eq(forms.id, submissions.formId))
-      .orderBy(desc(submissions.id))
-      .limit(5),
-    db
-      .select({ n: count() })
-      .from(submissions)
-      .where(eq(submissions.status, "new")),
-    db
-      .select({ n: count() })
-      .from(submissions)
-      .where(isNull(submissions.optedInAt)),
-    db.select({ n: count() }).from(webhooks),
-    mailerStatus(db, env),
-  ]);
+  const since = failureCutoff();
+  const [formRows, recent, unread, pending, webhookRows, mail, failedHooks, failedMail] =
+    await Promise.all([
+      db.select().from(forms).orderBy(desc(forms.updatedAt)),
+      db
+        .select({
+          id: submissions.id,
+          email: submissions.email,
+          status: submissions.status,
+          createdAt: submissions.createdAt,
+          formName: forms.name,
+        })
+        .from(submissions)
+        .innerJoin(forms, eq(forms.id, submissions.formId))
+        .orderBy(desc(submissions.id))
+        .limit(5),
+      db.select({ n: count() }).from(submissions).where(eq(submissions.status, "new")),
+      db.select({ n: count() }).from(submissions).where(isNull(submissions.optedInAt)),
+      db.select({ n: count() }).from(webhooks),
+      mailerStatus(db, env),
+      db
+        .select({ n: count() })
+        .from(webhookDeliveries)
+        // A webhook the owner switched off is not news.
+        .innerJoin(
+          webhooks,
+          and(eq(webhooks.id, webhookDeliveries.webhookId), eq(webhooks.active, true)),
+        )
+        .where(and(eq(webhookDeliveries.status, "failed"), gt(webhookDeliveries.updatedAt, since))),
+      db
+        .select({ n: count() })
+        .from(emailDeliveries)
+        .where(and(eq(emailDeliveries.status, "failed"), gt(emailDeliveries.updatedAt, since))),
+    ]);
 
   const submissionCount = formRows.reduce((sum, form) => sum + form.submissionCount, 0);
   const unreadCount = Number(unread[0]?.n ?? 0);
@@ -59,6 +68,8 @@ export default async function DashboardHomePage() {
     latestForm,
     unconfiguredForm: unconfigured ? { id: unconfigured.id, name: unconfigured.name } : null,
     doubleOptInForm: doubleOptIn ? { id: doubleOptIn.id, name: doubleOptIn.name } : null,
+    failedWebhookCount: Number(failedHooks[0]?.n ?? 0),
+    failedEmailCount: Number(failedMail[0]?.n ?? 0),
   };
 
   const waitlistForms = formRows.filter((form) => form.mode === "waitlist").length;

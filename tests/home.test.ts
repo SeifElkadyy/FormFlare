@@ -11,9 +11,24 @@ const empty: HomeSnapshot = {
   latestForm: null,
   unconfiguredForm: null,
   doubleOptInForm: null,
+  failedWebhookCount: 0,
+  failedEmailCount: 0,
 };
 
 describe("homeInsights", () => {
+  it("puts failing deliveries first", () => {
+    const items = homeInsights({
+      ...empty,
+      formCount: 1,
+      unreadCount: 3,
+      latestForm: { id: "f1", name: "Contact" },
+      failedWebhookCount: 2,
+      failedEmailCount: 1,
+    });
+    expect(items.map((item) => item.id)).toEqual(["webhook-failures", "email-failures"]);
+    expect(items[0].title).toBe("2 webhook deliveries failed this week");
+  });
+
   it("asks for a form when the instance is empty", () => {
     const [first, ...rest] = homeInsights(empty);
     expect(first.id).toBe("create");
@@ -60,6 +75,7 @@ describe("homeInsights", () => {
 
   it("says you are set up when nothing is blocked", () => {
     const items = homeInsights({
+      ...empty,
       formCount: 1,
       submissionCount: 10,
       unreadCount: 0,
