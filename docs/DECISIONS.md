@@ -36,6 +36,27 @@ Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
 
 ---
 
+## 2026-09-24 — Updater: package.json name, migration detection
+
+Found while updating a real Deploy-button copy (`formflare-seifelkady`) from v0.2.1 to
+v0.3.1.
+
+**Cloudflare renames `"name"` in package.json** to the repository name when it clones.
+`"version"` sits on the next line and changes in every release, so `git apply --3way`
+saw overlapping edits. package.json went to `pending-updates.json` for **every
+deployer on every release**. The updater now swaps upstream's name in, applies the
+patch, and restores the local name. If the file still conflicts, it is restored from
+HEAD as before, which also undoes the swap. Verified by re-running the v0.2.1 → v0.3.1
+update on that copy: 92 files applied, none skipped.
+
+**Migrations were never flagged.** The check looked for `migrations/`, but they live in
+`drizzle/migrations/`, so the report's "Database migrations" warning never appeared.
+
+Deployers get this fix only from the update *after* they reach this version: the
+script that runs is the one already in their copy.
+
+---
+
 ## 2026-09-24 — Readable error page for plain HTML forms
 
 A form with no JavaScript that failed validation (or hit the rate limit, a paused form,
