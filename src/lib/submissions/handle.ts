@@ -6,6 +6,7 @@ import { cloudflareQueue } from "../platform/queue";
 import { r2Storage } from "../platform/storage";
 import { decryptSecret } from "../crypto/secrets";
 import { isHoneypotHit, stripReserved } from "../spam/honeypot";
+import { FILL_TOKEN_FIELD, blocklistReason, fillTimeReason, parseBlocklist } from "../spam/filter";
 import { originAllowed, resolveRedirect } from "../spam/origin";
 import { verifyTurnstile } from "../spam/turnstile";
 import { claimPosition, findExistingSignup, bumpSubmissionCount } from "../waitlist/position";
@@ -78,18 +79,7 @@ export async function handleSubmission(
   // the decoy carries the same fields a real signup gets, with a plausible next
   // position (from the cached counter, so no extra query).
   if (isHoneypotHit(parsed.values, form.honeypotField)) {
-    const waitlist = form.mode === "waitlist";
-    const pending = waitlist && form.doubleOptIn;
-    const position = waitlist && !pending ? form.submissionCount + 1 : null;
-    return successResponse(request, form, parsed.wasJson, {
-      id: ulid(),
-      duplicate: false,
-      pending,
-      position,
-      rank: position,
-      referralCode: waitlist ? newReferralCode() : null,
-      redirectOverride: parsed.values._redirect,
-    });
+    return decoyResponse(request, form, parsed.wasJson, parsed.values._redirect);
   }
 
   if (form.turnstileSecret) {
@@ -130,6 +120,21 @@ export async function handleSubmission(
     }
   }
 
+  // Cheap content checks. A hit is kept (Spam tab) but gets the same decoy as the
+  // honeypot: no notification, no webhook, no waitlist place, nothing for a bot to learn.
+  const sessionSecret = (await getSetting(db, SETTING.sessionSecret)) ?? "";
+  const spamReason =
+    (await fillTimeReason(parsed.values[FILL_TOKEN_FIELD], sessionSecret)) ??
+    blocklistReason(
+      validation.data,
+      extractEmail(validation.data, fields),
+      parseBlocklist(form.spamWords),
+    );
+  if (spamReason) {
+    await saveSpam(db, form, validation.data, request, spamReason);
+    return decoyResponse(request, form, parsed.wasJson, parsed.values._redirect);
+  }
+
   const saved = await saveSubmission(
     env,
     db,
@@ -160,6 +165,61 @@ export async function handleSubmission(
   });
 }
 
+/**
+ * What a caught submission gets back: exactly what a real one would. On waitlist forms
+ * the decoy carries the same fields a real signup gets, with a plausible next position
+ * from the cached counter, so a bot cannot tell it was caught.
+ */
+function decoyResponse(
+  request: Request,
+  form: Form,
+  wasJson: boolean,
+  redirectOverride: string | undefined,
+): Response {
+  const waitlist = form.mode === "waitlist";
+  const pending = waitlist && form.doubleOptIn;
+  const position = waitlist && !pending ? form.submissionCount + 1 : null;
+  return successResponse(request, form, wasJson, {
+    id: ulid(),
+    duplicate: false,
+    pending,
+    position,
+    rank: position,
+    referralCode: waitlist ? newReferralCode() : null,
+    redirectOverride,
+  });
+}
+
+/**
+ * Keep a caught submission for review. Files are dropped, no counter moves, and email is
+ * left out of the indexed column so a spam row never blocks a real waitlist signup with
+ * the same address (dedupe keys on it).
+ */
+async function saveSpam(
+  db: ReturnType<typeof createDb>,
+  form: Form,
+  data: Record<string, string>,
+  request: Request,
+  reason: string,
+): Promise<void> {
+  const now = Date.now();
+  await db.insert(submissions).values({
+    id: ulid(now),
+    formId: form.id,
+    dataJson: JSON.stringify(data),
+    email: null,
+    status: "spam",
+    spamReason: reason,
+    // Not "unconfirmed": that state offers a confirm link in the inbox.
+    optedInAt: now,
+    fannedOutAt: now,
+    country: (request as { cf?: { country?: string } }).cf?.country ?? null,
+    userAgent: request.headers.get("user-agent")?.slice(0, 512) ?? null,
+    referrer: request.headers.get("referer")?.slice(0, 512) ?? null,
+    createdAt: now,
+  });
+}
+
 interface SavedSubmission {
   id: string;
   duplicate: boolean;
@@ -187,7 +247,8 @@ async function saveSubmission(
     const existing = await findExistingSignup(env.DB, form.id, email);
     if (existing) {
       const pending = form.doubleOptIn && !existing.optedInAt;
-      const rank = existing.position !== null ? await waitlistRank(env.DB, form.id, existing.id) : null;
+      const rank =
+        existing.position !== null ? await waitlistRank(env.DB, form.id, existing.id) : null;
       return {
         id: existing.id,
         duplicate: true,
@@ -200,7 +261,8 @@ async function saveSubmission(
   }
 
   const pending = form.mode === "waitlist" && form.doubleOptIn;
-  const position = form.mode === "waitlist" && !pending ? await claimPosition(env.DB, form.id) : null;
+  const position =
+    form.mode === "waitlist" && !pending ? await claimPosition(env.DB, form.id) : null;
   if (form.mode !== "waitlist") await bumpSubmissionCount(env.DB, form.id);
 
   const submissionId = ulid(now);
@@ -282,8 +344,7 @@ async function saveSubmission(
     await creditReferral(db, referrer.id);
   }
 
-  const rank =
-    position !== null ? await waitlistRank(env.DB, form.id, submissionId) : null;
+  const rank = position !== null ? await waitlistRank(env.DB, form.id, submissionId) : null;
 
   return {
     id: submissionId,

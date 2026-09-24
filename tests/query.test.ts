@@ -182,6 +182,15 @@ describe("filters", () => {
     expect(byEmail.items).toHaveLength(1);
   });
 
+  it("searches the owner's notes", async () => {
+    const formId = await seedForm();
+    await seedSubmission(formId, 0, { note: "Sent a quote on Monday" });
+    await seedSubmission(formId, 1);
+
+    const page = await listSubmissions(db, { search: "quote" }, null, 10);
+    expect(page.items.map((i) => i.note)).toEqual(["Sent a quote on Monday"]);
+  });
+
   /** `%` is a LIKE wildcard; searching for it literally must not match everything. */
   it("escapes LIKE wildcards in the search term", async () => {
     const formId = await seedForm();

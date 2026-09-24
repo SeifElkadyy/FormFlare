@@ -62,6 +62,7 @@ function buildWhere(filters: SubmissionFilters, cursor: string | null): SQL | un
       or(
         sql`${submissions.dataJson} LIKE ${term} ESCAPE '\\'`,
         sql`${submissions.email} LIKE ${term} ESCAPE '\\'`,
+        sql`${submissions.note} LIKE ${term} ESCAPE '\\'`,
       ),
     );
   }

@@ -30,6 +30,44 @@ Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
 
 ---
 
+## 2026-09-23 — Spam filter with no setup, and notes
+
+**Why not AI scoring first.** The Workers AI binding forces a Cloudflare login and incurs
+usage charges even under `npm run dev`, preview and tests. These checks need no binding,
+no third party and no configuration.
+
+**Fill-time token.** The hosted page (so also the widget) renders a hidden
+`_ts = <rendered-at ms>.<HMAC(session_secret)>`. A submit under 2 seconds after render,
+or with a forged token, is spam. A *missing* token is not: forms on the owner's own site
+never had one, so its absence proves nothing. `_ts` is a reserved field and is never
+stored. A bot can replay an old genuine token; that only passes the timing check, which
+is all it ever claimed to cover.
+
+**Blocklist per form** (`forms.spam_words`, migration 0008). One entry per line.
+`@domain` matches that email domain and its subdomains. Anything else is a
+case-insensitive phrase matched anywhere in the submission. Stored normalised and
+deduplicated, capped at 200 entries.
+
+**What a caught submission gets.** It gets the honeypot's decoy response (now shared as
+`decoyResponse`), so a bot cannot tell it was caught. It is stored with `status = spam`
+and its `spam_reason`, and nothing else happens:
+
+- no job, no counter bump, no waitlist position, no referral credit;
+- files are dropped;
+- `email` is left null in the indexed column, so a spam row can never block the real
+  person's waitlist signup through the dedupe index. The address is still in the data;
+- `opted_in_at` is set, because null would render as "Unconfirmed" with a confirm link.
+
+The honeypot itself still stores nothing, as before. The Spam tab shows the reason and a
+**Not spam** action (status back to `new`). The public count now excludes spam on
+standard forms; the waitlist count already required a position.
+
+**Notes.** `submissions.note` (0008): private, never sent in emails or webhooks. It is
+edited in the expanded row, searched by Inbox search, included in CSV (last column) and
+in the JSON export.
+
+---
+
 ## 2026-09-23 — Redesign: form-centric, three places, one accent
 
 The dashboard had grown one screen per feature. Home repeated the sidebar (a Quick access

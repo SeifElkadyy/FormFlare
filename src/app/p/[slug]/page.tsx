@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { recordView } from "@/lib/insights/form";
+import { SETTING, getSetting } from "@/lib/db/settings";
+import { FILL_TOKEN_FIELD, signFillToken } from "@/lib/spam/filter";
 import { getServices } from "@/lib/env";
 import { loadHostedForm } from "@/lib/submissions/form-cache";
 import { effectiveFields } from "@/lib/submissions/fields";
@@ -30,6 +32,8 @@ export default async function HostedFormPage({
   ctx.waitUntil(recordView((env as CloudflareEnv).DB, form.id).catch(() => {}));
 
   const fields = effectiveFields(form.fieldsJson, form.mode);
+  // When the page was rendered, signed: a submit sooner than a person could type is spam.
+  const fillToken = await signFillToken((await getSetting(db, SETTING.sessionSecret)) ?? "");
   const framed = embed === "1";
   // `?embed=1` on the endpoint carries through to /thanks so it renders compact. A form
   // with its own redirect leaves the iframe: the owner's page is unlikely to allow framing.
@@ -69,6 +73,7 @@ export default async function HostedFormPage({
             autoComplete="off"
             aria-hidden
           />
+          <input type="hidden" name={FILL_TOKEN_FIELD} value={fillToken} />
           {ref ? <input type="hidden" name="_ref" value={ref} /> : null}
 
           <FormFields fields={fields} />

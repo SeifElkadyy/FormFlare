@@ -76,8 +76,8 @@ export async function GET(request: Request): Promise<Response> {
     const firstPage = await listSubmissions(db, filters, null, 200);
     const fieldColumns = buildFieldColumns(configured, firstPage.items);
 
-    header = [...META_COLUMNS, ...fieldColumns, "data"];
-    toRow = (row) => [...flattenRow(row, fieldColumns), row.dataJson];
+    header = [...META_COLUMNS, ...fieldColumns, "data", "note"];
+    toRow = (row) => [...flattenRow(row, fieldColumns), row.dataJson, row.note ?? ""];
   } else {
     header = [
       "id",
@@ -88,6 +88,7 @@ export async function GET(request: Request): Promise<Response> {
       "country",
       "created_at",
       "data",
+      "note",
     ];
     toRow = (row) => [
       row.id,
@@ -98,6 +99,7 @@ export async function GET(request: Request): Promise<Response> {
       row.country ?? "",
       new Date(row.createdAt).toISOString(),
       row.dataJson,
+      row.note ?? "",
     ];
   }
 
@@ -129,6 +131,7 @@ function serialise(row: {
   waitlistPosition: number | null;
   country: string | null;
   createdAt: number;
+  note: string | null;
 }) {
   return {
     id: row.id,
@@ -139,6 +142,7 @@ function serialise(row: {
     waitlistPosition: row.waitlistPosition,
     country: row.country,
     createdAt: row.createdAt,
+    note: row.note,
   };
 }
 

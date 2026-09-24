@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { deleteSubmissionAction, setStatusAction } from "./actions";
+import { deleteSubmissionAction, saveNoteAction, setStatusAction } from "./actions";
 import { LocalTime } from "./local-time";
 import { CopyButton } from "@/components/copy-button";
 import { Notice } from "@/components/notice";
-import { ArchiveIcon, MailOpenIcon, SpamIcon, TrashIcon } from "@/components/icons";
-import { btnDanger, btnIcon, btnToolbar } from "@/lib/ui";
+import { ArchiveIcon, MailOpenIcon, NoteIcon, SpamIcon, TrashIcon } from "@/components/icons";
+import { btnDanger, btnIcon, btnToolbar, textareaClass } from "@/lib/ui";
 
 interface Props {
   /** Show which form it came from (the all-forms Inbox), not inside a form's own tab. */
@@ -21,6 +21,8 @@ interface Props {
     country: string | null;
     createdAt: number;
     confirmUrl: string | null;
+    note: string | null;
+    spamReason: string | null;
   };
 }
 
@@ -47,7 +49,15 @@ export function SubmissionCard({ submission, showForm = true }: Props) {
             <span
               className={`truncate text-sm ${unread ? "font-semibold text-ink dark:text-mist" : "text-neutral-700 dark:text-neutral-300"}`}
             >
-              {submission.email ?? "No email"}
+              {submission.email ?? (typeof data.email === "string" ? data.email : "No email")}
+              {submission.note ? (
+                <span
+                  className="ms-2 inline-flex translate-y-0.5 text-neutral-400"
+                  title="Has a note"
+                >
+                  <NoteIcon />
+                </span>
+              ) : null}
               {submission.confirmUrl ? (
                 <span className="ms-2 text-xs font-medium text-amber-700 dark:text-amber-300">
                   Unconfirmed
@@ -86,6 +96,31 @@ export function SubmissionCard({ submission, showForm = true }: Props) {
               </div>
             ))}
           </dl>
+          {submission.status === "spam" && submission.spamReason ? (
+            <p className="mt-3 text-xs text-neutral-500">
+              Flagged automatically: {submission.spamReason}
+            </p>
+          ) : null}
+          <form action={saveNoteAction} className="mt-3 flex flex-col gap-2">
+            <input type="hidden" name="id" value={submission.id} />
+            <label
+              htmlFor={`note-${submission.id}`}
+              className="text-xs font-medium text-neutral-500"
+            >
+              Note <span className="font-normal">(only you see this)</span>
+            </label>
+            <textarea
+              id={`note-${submission.id}`}
+              name="note"
+              rows={2}
+              defaultValue={submission.note ?? ""}
+              placeholder="Called back, sent a quote…"
+              className={textareaClass}
+            />
+            <button type="submit" className={`${btnToolbar} self-start`}>
+              Save note
+            </button>
+          </form>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <span className="text-xs tabular-nums text-neutral-400">
               {submission.country ?? "Unknown country"}
@@ -134,6 +169,15 @@ function RowActions({
           status="archived"
           label="Archive"
           icon={<ArchiveIcon />}
+          compact={compact}
+        />
+      ) : null}
+      {submission.status === "spam" ? (
+        <StatusButton
+          id={submission.id}
+          status="new"
+          label="Not spam"
+          icon={<MailOpenIcon />}
           compact={compact}
         />
       ) : null}

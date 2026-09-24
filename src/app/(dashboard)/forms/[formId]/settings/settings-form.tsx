@@ -34,6 +34,7 @@ export interface SettingsFormProps {
   allowedOrigins: string[];
   turnstileSiteKey: string;
   hasTurnstileSecret: boolean;
+  spamWords: string;
 }
 
 /** Behaviour after a submission arrives. Visual things live on Edit. */
@@ -174,8 +175,24 @@ export function SettingsForm(props: SettingsFormProps) {
 
       <Section id="protection" title="Spam protection">
         <p className={hintClass}>
-          Every form already has a hidden bot trap and a rate limit. These are extra.
+          Always on: a hidden bot trap, a rate limit, and (on your form&rsquo;s page and widget)
+          rejecting anything sent faster than a person could type. Caught submissions go to the Spam
+          tab.
         </p>
+        <Field
+          htmlFor="spamWords"
+          label="Block submissions containing"
+          hint="One per line. Words or phrases, or @domain.com to block an email domain. Matches go to Spam."
+        >
+          <textarea
+            id="spamWords"
+            name="spamWords"
+            rows={3}
+            defaultValue={props.spamWords}
+            placeholder={"crypto\nseo services\n@spam-domain.com"}
+            className={`${textareaClass} font-mono text-xs`}
+          />
+        </Field>
         <Field
           label="Only accept from these websites"
           hint="Leave empty to accept from anywhere. Your form's own page always works."
