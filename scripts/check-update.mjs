@@ -157,7 +157,12 @@ const published = releases
   // Both checks matter: the API flag is only set if whoever cut the release
   // ticked the box, so a tag named -beta.1 can arrive marked as stable.
   .filter((release) => !release.draft && !release.prerelease && isStable(release.tag_name))
-  .map((release) => ({ tag: release.tag_name, name: release.name, url: release.html_url, body: release.body ?? "" }))
+  .map((release) => ({
+    tag: release.tag_name,
+    name: release.name,
+    url: release.html_url,
+    body: release.body ?? "",
+  }))
   .sort((a, b) => compareVersions(a.tag, b.tag));
 
 if (published.length === 0) {
@@ -196,12 +201,19 @@ console.log(`Update available: ${fromTag} → ${toTag}`);
 // Every release strictly between the installed one and the newest, so the PR can
 // show the notes a deployer skipped over when jumping several versions at once.
 const spanned = published.filter(
-  (release) => compareVersions(release.tag, fromTag) > 0 && compareVersions(release.tag, toTag) <= 0,
+  (release) =>
+    compareVersions(release.tag, fromTag) > 0 && compareVersions(release.tag, toTag) <= 0,
 );
 
 // Fetch both endpoints of the jump. This needs no common ancestor, which is the
 // whole reason the updater works on an unrelated-history clone.
-git(["fetch", "--quiet", UPSTREAM, `refs/tags/${fromTag}:refs/tags/up-${fromTag}`, `refs/tags/${toTag}:refs/tags/up-${toTag}`]);
+git([
+  "fetch",
+  "--quiet",
+  UPSTREAM,
+  `refs/tags/${fromTag}:refs/tags/up-${fromTag}`,
+  `refs/tags/${toTag}:refs/tags/up-${toTag}`,
+]);
 
 const changedFiles = lines(
   git(["diff", "--name-only", `up-${fromTag}`, `up-${toTag}`], { maxBuffer: 256 * 1024 * 1024 }),
@@ -241,16 +253,36 @@ git(["checkout", "--quiet", "-B", BRANCH, base]);
 // apply throws away every other file's changes too. Apply per file instead, so
 // one conflict costs one file.
 // --binary so images, fonts and file modes survive the round trip.
+// Cloudflare's clone renames "name" in package.json to the repository's name, and every
+// release bumps "version" on the very next line. Three-way apply sees those as
+// overlapping edits, so package.json would conflict for every deployer on every release.
+// Patch it under upstream's name, then put this copy's name back.
+const NAME_FIELD = /("name"\s*:\s*)"[^"]*"/;
+const jsonName = (text) => text.match(NAME_FIELD)?.[0];
+const upstreamName = jsonName(gitRaw(["show", `up-${fromTag}:package.json`]));
+
 const conflicted = [];
 for (const file of changedFiles) {
   const filePatch = gitRaw(["diff", "--binary", `up-${fromTag}`, `up-${toTag}`, "--", file]);
   if (!filePatch.trim()) continue;
+
+  const localName =
+    file === "package.json" && existsSync(file) ? jsonName(readFileSync(file, "utf8")) : undefined;
+  const renamed = Boolean(upstreamName && localName && localName !== upstreamName);
+  if (renamed) {
+    writeFileSync(file, readFileSync(file, "utf8").replace(NAME_FIELD, upstreamName));
+    git(["add", file]); // --index needs index and worktree to agree
+  }
+
   writeFileSync(".git/formflare-update.patch", filePatch);
   const applied = gitTry(["apply", "--3way", "--index", "--binary", ".git/formflare-update.patch"]);
   // Either a real conflict (markers in the index) or a patch that will not apply
   // at all — both mean "a human has to look at this file".
   if (!applied.ok || gitTry(["diff", "--name-only", "--diff-filter=U", "--", file]).out) {
-    conflicted.push(file);
+    conflicted.push(file); // restored from HEAD below, which also undoes the rename
+  } else if (renamed) {
+    writeFileSync(file, readFileSync(file, "utf8").replace(NAME_FIELD, localName));
+    git(["add", file]);
   }
 }
 
@@ -259,9 +291,9 @@ for (const file of changedFiles) {
 // unless a PAT carrying the `workflows` permission is present, keep those files
 // out of the commit entirely rather than letting the push fail.
 const hasPat = Boolean(process.env.UPDATE_PAT);
-const touchedWorkflows = lines(gitTry(["diff", "--cached", "--name-only", "--diff-filter=ACMRT", "HEAD"]).out).filter(
-  (file) => file.startsWith(".github/workflows/"),
-);
+const touchedWorkflows = lines(
+  gitTry(["diff", "--cached", "--name-only", "--diff-filter=ACMRT", "HEAD"]).out,
+).filter((file) => file.startsWith(".github/workflows/"));
 const skippedWorkflows = hasPat ? [] : touchedWorkflows;
 
 const excluded = [...new Set([...conflicted, ...skippedWorkflows])];
@@ -293,7 +325,9 @@ if (staged.length === 0 && excluded.length === 0) {
   process.exit(0);
 }
 
-const migrations = staged.filter((file) => file.startsWith("migrations/"));
+const migrations = staged.filter(
+  (file) => file.startsWith("drizzle/migrations/") && file.endsWith(".sql"),
+);
 const wrangler = [...staged, ...excluded].some((file) => file.startsWith("wrangler."));
 
 const body = [
@@ -302,7 +336,10 @@ const body = [
   "Your own commits are the base of this branch, so everything you changed is kept.",
   "",
   `### Releases included`,
-  ...spanned.map((release) => `- [${release.tag}](${release.url})${release.name && release.name !== release.tag ? ` — ${release.name}` : ""}`),
+  ...spanned.map(
+    (release) =>
+      `- [${release.tag}](${release.url})${release.name && release.name !== release.tag ? ` — ${release.name}` : ""}`,
+  ),
   "",
   `### Files updated (${staged.length})`,
   ...(staged.length > 0 ? staged.map((file) => `- \`${file}\``) : ["- _none_"]),
@@ -330,7 +367,9 @@ const body = [
         `### ⚠️ Needs you (${nextPending.length})`,
         "These files are **not** in this PR and still hold your version:",
         "",
-        ...nextPending.map((item) => `- \`${item.file}\` (${item.from} → ${item.to}) — ${item.reason}`),
+        ...nextPending.map(
+          (item) => `- \`${item.file}\` (${item.from} → ${item.to}) — ${item.reason}`,
+        ),
         "",
         `They are tracked in \`${PENDING_FILE}\` and will be listed again on every future update. Apply each by hand, then delete its entry from that file.`,
         "",
@@ -369,10 +408,7 @@ if (nextPending.length > 0 || existsSync(PENDING_FILE)) {
 // release changed no other line of it — and the same update would then be
 // offered again forever.
 const packageJson = readFileSync("package.json", "utf8");
-const bumped = packageJson.replace(
-  /("version"\s*:\s*)"[^"]*"/,
-  `$1"${toTag.replace(/^v/, "")}"`,
-);
+const bumped = packageJson.replace(/("version"\s*:\s*)"[^"]*"/, `$1"${toTag.replace(/^v/, "")}"`);
 if (bumped !== packageJson) {
   writeFileSync("package.json", bumped);
   git(["add", "package.json"]);
@@ -389,7 +425,9 @@ if (shouldPush) {
 }
 
 if (process.env.GITHUB_OUTPUT) {
-  writeFileSync(process.env.GITHUB_OUTPUT, `updated=true\nfrom=${fromTag}\nto=${toTag}\n`, { flag: "a" });
+  writeFileSync(process.env.GITHUB_OUTPUT, `updated=true\nfrom=${fromTag}\nto=${toTag}\n`, {
+    flag: "a",
+  });
 }
 writeFileSync(join(tmpdir(), "pr-body.md"), body);
 
