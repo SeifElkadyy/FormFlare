@@ -29,11 +29,28 @@ Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
 - **README screenshot / demo GIF / live demo** — the redesign is the look to freeze;
   capture it next.
 - **Fresh Deploy-button run on a clean account** — not yet done for v0.3.0.
-- **Plain HTML validation errors** land on a raw JSON page; send non-JS posts back with
-  a readable message.
 - **`@formflare/react`** — npm names are free; needs an `@formflare` npm org.
 - **Later from the plan** — Workers AI spam scoring; Telegram presets; n8n/Zapier
   templates; a lead pipeline; GDPR delete-by-email; team members and roles.
+
+---
+
+## 2026-09-24 — Readable error page for plain HTML forms
+
+A form with no JavaScript that failed validation (or hit the rate limit, a paused form,
+a failed bot check) navigated the visitor to raw `{"ok":false,...}` JSON. Those requests
+now get a small HTML page with the same status code, a plain-language title, and the
+fields to fix. It tells them to use Back, which keeps what they typed. We don't render a
+Back link: it would have to trust the Referer.
+
+Chosen by `Sec-Fetch-Mode: navigate`, not by the absence of `Accept: application/json`.
+A `fetch()` caller that never set Accept already parses the JSON error, and switching it
+to HTML would break it silently. Browsers send `navigate` only for real page
+navigations, and curl and servers send nothing, so both keep JSON. Everything echoed is
+escaped, and the page ships with `default-src 'none'`.
+
+Also: Settings' "update available" note now gives the actual command
+(`node scripts/check-update.mjs` in your own repository) instead of "pull the new tag".
 
 ---
 

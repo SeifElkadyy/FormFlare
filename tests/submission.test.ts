@@ -312,6 +312,40 @@ describe("origin allow-list", () => {
   });
 });
 
+describe("error pages for plain HTML forms", () => {
+  const navigate = { "sec-fetch-mode": "navigate", "sec-fetch-dest": "document" };
+
+  it("shows a readable page, not raw JSON, when a browser form fails validation", async () => {
+    const { publicId } = await seedForm({
+      fieldsJson: JSON.stringify([{ name: "full_name", type: "text", required: true }]),
+    });
+    const res = await handleSubmission(formPost(publicId, { other: "x" }, navigate), env, ctx());
+
+    expect(res.status).toBe(422);
+    expect(res.headers.get("content-type")).toContain("text/html");
+    const html = await res.text();
+    expect(html).toContain("Please check your answers");
+    expect(html).toContain("<strong>Full name</strong>");
+  });
+
+  it("escapes anything it echoes", async () => {
+    const { errorPageHtml } = await import("../src/lib/submissions/error-page");
+    const html = errorPageHtml("validation_failed", { "<img src=x>": "<script>" });
+    expect(html).not.toContain("<script>");
+    expect(html).not.toContain("<img");
+  });
+
+  it("keeps JSON for fetch() callers, even without an Accept header", async () => {
+    const res = await handleSubmission(
+      formPost("nope123456", { a: "b" }, { "sec-fetch-mode": "cors" }),
+      env,
+      ctx(),
+    );
+    expect(res.headers.get("content-type")).toContain("application/json");
+    await expect(res.json()).resolves.toMatchObject({ code: "form_not_found" });
+  });
+});
+
 describe("honeypot", () => {
   it("looks like success but stores nothing and creates no job", async () => {
     const { publicId, formId } = await seedForm();
