@@ -5,10 +5,15 @@ Format: date — what — why.
 
 ---
 
-## Current state (2026-09-23)
+## Current state (2026-09-24)
 
-**v0.2.1 is the current release.** MIT. Repo: https://github.com/SeifElkadyy/FormFlare
-— annotated tag `v0.2.1` on `main`. Earlier: v0.2.0 at `f8c8823`, v0.1.0 at `d137ae8`.
+**v0.3.0 is the current release.** MIT. Repo: https://github.com/SeifElkadyy/FormFlare
+— annotated tag `v0.3.0` on `main`. Earlier: v0.2.1 at `f4120f4`, v0.2.0 at `f8c8823`,
+v0.1.0 at `d137ae8`.
+
+v0.3.0 is the form-centric redesign (Forms / Inbox / Settings, tabs per form), the
+self-sizing widget, per-form insights, delivery-failure alerts, the no-setup spam filter
+and notes. Migrations 0007–0008, both additive.
 
 Phases **0–6 are done**. That is the v1 product from the plan: Deploy to Cloudflare
 button, `/setup` wizard, projects/forms, `POST /f/:publicId`, waitlists, spam layers,
@@ -21,12 +26,14 @@ Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
 
 ## Next up
 
-- **README screenshot / demo GIF / live demo** — palette is in (Ink, Flare, Mist,
-  Slate). Still waiting on a dedicated capture pass; do not shoot until the
-  flame lockup and dashboard are the look we want to freeze.
+- **README screenshot / demo GIF / live demo** — the redesign is the look to freeze;
+  capture it next.
+- **Fresh Deploy-button run on a clean account** — not yet done for v0.3.0.
+- **Plain HTML validation errors** land on a raw JSON page; send non-JS posts back with
+  a readable message.
+- **`@formflare/react`** — npm names are free; needs an `@formflare` npm org.
 - **Later from the plan** — Workers AI spam scoring; Telegram presets; n8n/Zapier
-  templates; tags, notes and a lead pipeline; GDPR delete-by-email; TypeScript SDK and
-  React component; team members and roles. (Per-form analytics shipped as Insights.)
+  templates; a lead pipeline; GDPR delete-by-email; team members and roles.
 
 ---
 
