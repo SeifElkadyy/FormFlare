@@ -7,9 +7,10 @@ Format: date — what — why.
 
 ## Current state (2026-09-24)
 
-**v0.3.0 is the current release.** MIT. Repo: https://github.com/SeifElkadyy/FormFlare
-— annotated tag `v0.3.0` on `main`. Earlier: v0.2.1 at `f4120f4`, v0.2.0 at `f8c8823`,
-v0.1.0 at `d137ae8`.
+**v0.3.1 is the current release.** MIT. Repo: https://github.com/SeifElkadyy/FormFlare
+— annotated tag `v0.3.1` on `main`. Earlier: v0.3.0 at `022ade3`, v0.2.1 at `f4120f4`,
+v0.2.0 at `f8c8823`, v0.1.0 at `d137ae8`. v0.3.1 adds the readable error page for plain
+HTML forms.
 
 v0.3.0 is the form-centric redesign (Forms / Inbox / Settings, tabs per form), the
 self-sizing widget, per-form insights, delivery-failure alerts, the no-setup spam filter
