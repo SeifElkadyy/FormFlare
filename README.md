@@ -26,6 +26,17 @@ database and queue, and deploys. Then open `/setup` to create your admin account
 One Worker in your Cloudflare account. Submissions go to D1, files to R2, and
 emails/webhooks run in the background through Queues.
 
+## Use it with AI coding tools
+
+- **In the dashboard:** every form's **Share** tab has **Copy prompt**. Paste it into
+  Cursor, Claude, Lovable, v0 or Bolt, and it adds the form to your site in your own
+  framework and styling, with the right address, fields and bot trap.
+- **Agent Skill:** [`skills/formflare/SKILL.md`](./skills/formflare/SKILL.md) teaches any
+  agent how to embed forms, handle waitlists, verify webhooks, use the API, and deploy or
+  update FormFlare. For Claude Code, copy the `skills/formflare` folder into your
+  project's `.claude/skills/` (or `~/.claude/skills/` to use it everywhere).
+- **[`llms.txt`](./llms.txt)** indexes the docs for AI tools.
+
 ## Local development
 
 ```bash

@@ -7,6 +7,8 @@ import { getServices } from "@/lib/env";
 import { originFromHost } from "@/lib/instance/url";
 import { PageBody } from "@/components/page-header";
 import { successClass } from "@/lib/ui";
+import { agentPrompt } from "@/lib/submissions/agent-prompt";
+import { parseOrigins } from "@/lib/spam/origin";
 import { SharePanel } from "./share-panel";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +48,17 @@ export default async function FormSharePage({
         honeypot={form.honeypotField}
         fieldsJson={form.fieldsJson}
         active={form.active}
+        prompt={agentPrompt({
+          name: form.name,
+          mode: form.mode,
+          endpoint: `${origin}/f/${form.publicId}`,
+          pageUrl: `${origin}/p/${form.slug ?? form.publicId}`,
+          honeypot: form.honeypotField,
+          fieldsJson: form.fieldsJson,
+          allowedOrigins: parseOrigins(form.allowedOriginsJson),
+          turnstileSiteKey: form.turnstileSiteKey,
+          turnstileRequired: Boolean(form.turnstileSecret),
+        })}
       />
     </PageBody>
   );
