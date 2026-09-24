@@ -36,6 +36,31 @@ Sending is optional. Maintainer-only IDs live in `wrangler.dev.jsonc`, not
 
 ---
 
+## 2026-09-24 — Setup through AI coding tools
+
+Most landing pages are now built with an AI tool (Cursor, Claude Code, Lovable, v0,
+Bolt). Three pieces make FormFlare something those tools can wire in correctly:
+
+- **Share → Copy prompt** (`src/lib/submissions/agent-prompt.ts`). The prompt carries
+  *this* form's endpoint, exact field names and types, honeypot, response and error
+  contract, waitlist and referral handling, and the allowed-sites list. It adds the
+  Turnstile requirement only when the form enforces it: without the widget, every
+  submission would fail. It states the contract rather than pasting a snippet, so the
+  agent writes code that fits the project it is in.
+- **Agent Skill** at `skills/formflare/SKILL.md` (standard `name`/`description`
+  frontmatter). It covers embedding (React/Next.js, plain HTML, no-code), waitlists,
+  webhook verification, the read-only API, deploying, updating a Deploy-button copy, and
+  troubleshooting. Every fact was checked against the code: API filter names,
+  response fields, the count endpoint. It tells agents not to invent endpoints and not
+  to push to a deployer's repo without asking, since a push deploys.
+- **`llms.txt`** at the repo root indexes the skill and docs.
+
+Not built: an MCP server. The public endpoint needs no key and the REST API is
+read-only, so there is nothing an agent could *do* through MCP that the prompt and API
+don't already cover. Reconsider if form creation moves into the API.
+
+---
+
 ## 2026-09-24 — Updater: package.json name, migration detection
 
 Found while updating a real Deploy-button copy (`formflare-seifelkady`) from v0.2.1 to

@@ -1,0 +1,24 @@
+# FormFlare
+
+> Self-hosted forms and waitlists for any website, deployed to your own Cloudflare account in one click. A website posts to `https://<instance>/f/<publicId>` with no API key; submissions land in the owner's dashboard and trigger email alerts and signed webhooks.
+
+For AI coding agents: the full, tested playbook (embedding in React/Next.js/HTML, waitlists and referrals, error codes, webhook verification, the REST API, deploying and updating) is in the Agent Skill below. In a FormFlare dashboard, every form's Share tab has a "Copy prompt" button with that form's exact endpoint and fields.
+
+## Agent skill
+
+- [skills/formflare/SKILL.md](https://github.com/SeifElkadyy/FormFlare/blob/main/skills/formflare/SKILL.md): how to add FormFlare forms to a website and operate an instance
+
+## Docs
+
+- [Embedding](https://github.com/SeifElkadyy/FormFlare/blob/main/docs/embedding.md): HTML, fetch/JSON, React, hosted page and widget
+- [API](https://github.com/SeifElkadyy/FormFlare/blob/main/docs/api.md): submission endpoint contract, error codes, webhooks and signature verification
+- [Deployment](https://github.com/SeifElkadyy/FormFlare/blob/main/docs/deployment.md): Deploy to Cloudflare, local development
+- [Custom domain](https://github.com/SeifElkadyy/FormFlare/blob/main/docs/custom-domain.md)
+- [Backups](https://github.com/SeifElkadyy/FormFlare/blob/main/docs/backups.md): D1 Time Travel and exports
+- [Troubleshooting](https://github.com/SeifElkadyy/FormFlare/blob/main/docs/troubleshooting.md)
+
+## Optional
+
+- [README](https://github.com/SeifElkadyy/FormFlare/blob/main/README.md): features, costs, FAQ, updating a deployed copy
+- [Decisions](https://github.com/SeifElkadyy/FormFlare/blob/main/docs/DECISIONS.md): why things are the way they are
+- [AGENTS.md](https://github.com/SeifElkadyy/FormFlare/blob/main/AGENTS.md): rules for agents contributing to FormFlare itself

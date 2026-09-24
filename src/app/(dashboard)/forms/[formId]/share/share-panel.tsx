@@ -44,6 +44,7 @@ export function SharePanel({
   honeypot,
   fieldsJson,
   active,
+  prompt,
 }: {
   formId: string;
   origin: string;
@@ -53,6 +54,8 @@ export function SharePanel({
   honeypot: string;
   fieldsJson: string;
   active: boolean;
+  /** Ready-to-paste instructions for an AI coding tool, built on the server. */
+  prompt: string;
 }) {
   const [way, setWay] = useState<Way>("link");
   const [code, setCode] = useState<EmbedKind>("html");
@@ -72,6 +75,27 @@ export function SharePanel({
           This form is paused. Visitors will see it but can&rsquo;t submit until you resume it.
         </p>
       ) : null}
+
+      <section className="flex flex-col gap-3 rounded-xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">Building your site with AI?</p>
+            <p className={hintClass}>
+              Copy a prompt for Cursor, Claude, Lovable, v0 or Bolt. It has this form&rsquo;s
+              address and fields, so the AI adds it to your site in your own style.
+            </p>
+          </div>
+          <CopyButton text={prompt} label="Copy prompt" />
+        </div>
+        <details>
+          <summary className="cursor-pointer text-xs font-medium text-neutral-500">
+            Show the prompt
+          </summary>
+          <pre className={cn(codeBlockClass, "mt-2 max-h-80 overflow-auto whitespace-pre-wrap")}>
+            {prompt}
+          </pre>
+        </details>
+      </section>
 
       <div
         role="radiogroup"
