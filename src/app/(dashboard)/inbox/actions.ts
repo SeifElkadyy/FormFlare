@@ -57,3 +57,21 @@ export async function bulkStatusAction(formData: FormData): Promise<void> {
   revalidatePath("/inbox");
   revalidatePath("/forms", "layout");
 }
+
+/** Save the owner's private note on a submission. Empty clears it. */
+export async function saveNoteAction(formData: FormData): Promise<void> {
+  await requireUserForMutation();
+  const { db } = await getServices();
+
+  const id = String(formData.get("id") ?? "");
+  const note = String(formData.get("note") ?? "")
+    .trim()
+    .slice(0, 5000);
+  await db
+    .update(submissions)
+    .set({ note: note || null })
+    .where(eq(submissions.id, id));
+
+  revalidatePath("/inbox");
+  revalidatePath("/forms", "layout");
+}

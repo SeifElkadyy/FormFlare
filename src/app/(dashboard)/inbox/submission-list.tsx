@@ -94,6 +94,8 @@ export async function SubmissionList({
                 country: row.country,
                 createdAt: row.createdAt,
                 confirmUrl,
+                note: row.note,
+                spamReason: row.spamReason,
               }}
             />
           ))}

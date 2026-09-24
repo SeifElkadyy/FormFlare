@@ -66,6 +66,7 @@ export default async function FormSettingsPage({
         allowedOrigins={parseOrigins(form.allowedOriginsJson)}
         turnstileSiteKey={form.turnstileSiteKey ?? ""}
         hasTurnstileSecret={Boolean(form.turnstileSecret)}
+        spamWords={form.spamWords ?? ""}
       />
 
       <Section id="webhooks" title="Webhooks">

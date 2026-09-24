@@ -1,3 +1,5 @@
+import { hmacHex, safeEqual } from "../crypto/hmac";
+
 /**
  * Signed confirmation links for waitlist double opt-in.
  *
@@ -14,7 +16,7 @@ export async function signConfirmToken(
   now: number = Date.now(),
 ): Promise<{ exp: number; sig: string }> {
   const exp = now + TTL_MS;
-  const sig = await hmac(sessionSecret, `${submissionId}.${exp}`);
+  const sig = await hmacHex(sessionSecret, `${submissionId}.${exp}`);
   return { exp, sig };
 }
 
@@ -27,26 +29,11 @@ export async function verifyConfirmToken(
 ): Promise<boolean> {
   if (!Number.isFinite(exp) || exp <= now) return false;
   if (!/^[0-9a-f]+$/i.test(sig)) return false;
-  const expected = await hmac(sessionSecret, `${submissionId}.${exp}`);
-  if (expected.length !== sig.length) return false;
-  let diff = 0;
-  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ sig.charCodeAt(i);
-  return diff === 0;
+  const expected = await hmacHex(sessionSecret, `${submissionId}.${exp}`);
+  return safeEqual(expected, sig);
 }
 
 export function confirmPath(submissionId: string, exp: number, sig: string): string {
   const params = new URLSearchParams({ s: submissionId, exp: String(exp), sig });
   return `/confirm?${params.toString()}`;
-}
-
-async function hmac(secret: string, payload: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
-  return [...new Uint8Array(signature)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }

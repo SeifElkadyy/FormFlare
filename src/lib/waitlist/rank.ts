@@ -74,7 +74,7 @@ export async function publicCount(d1: D1Database, publicId: string): Promise<num
   }
 
   const counted = await d1
-    .prepare(`SELECT count(*) AS n FROM submissions WHERE form_id = ?1`)
+    .prepare(`SELECT count(*) AS n FROM submissions WHERE form_id = ?1 AND status != 'spam'`)
     .bind(form.id)
     .first<{ n: number }>();
   return counted?.n ?? 0;

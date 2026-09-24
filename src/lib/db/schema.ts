@@ -110,6 +110,8 @@ export const forms = sqliteTable(
      * `waitlist_position` is never rewritten — colliding updates would break uniqueness.
      */
     referralBoost: integer("referral_boost").notNull().default(0),
+    /** Newline-separated phrases and `@domain`s. A match is stored as spam. */
+    spamWords: text("spam_words"),
     hostedDescription: text("hosted_description"),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
@@ -152,6 +154,8 @@ export const submissions = sqliteTable(
     userAgent: text("user_agent"),
     referrer: text("referrer"),
     spamReason: text("spam_reason"),
+    /** The owner's private note. Never sent anywhere. */
+    note: text("note"),
     /**
      * Set once fan-out has created every delivery row for this submission.
      *

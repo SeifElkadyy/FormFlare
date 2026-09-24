@@ -14,6 +14,7 @@ import { invalidateForm } from "@/lib/submissions/form-cache";
 import { getEnv, getServices } from "@/lib/env";
 import { mailerStatus } from "@/lib/platform/resolve-mailer";
 import { originFromInput } from "@/lib/spam/origin-input";
+import { parseBlocklist } from "@/lib/spam/filter";
 import { defaultFields, parseFieldsPayload } from "@/lib/submissions/fields";
 import { refuseDoubleOptIn } from "@/lib/waitlist/opt-in";
 import { parseSlug } from "@/lib/waitlist/slug";
@@ -202,6 +203,7 @@ async function settingsPatch(form: Form, formData: FormData): Promise<Patch> {
     turnstileSecret,
     doubleOptIn,
     referralBoost,
+    spamWords: parseBlocklist(String(formData.get("spamWords") ?? "")).join("\n") || null,
   };
 }
 

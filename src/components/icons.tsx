@@ -17,6 +17,7 @@ import {
   Search,
   Settings,
   ShieldAlert,
+  StickyNote,
   SunMedium,
   Trash2,
   X,
@@ -29,7 +30,6 @@ const icon = {
   "aria-hidden": true,
 } satisfies LucideProps;
 
-
 export function InboxIcon() {
   return <Inbox {...icon} />;
 }
@@ -38,12 +38,9 @@ export function FormsIcon() {
   return <NotepadText {...icon} />;
 }
 
-
-
 export function SettingsIcon() {
   return <Settings {...icon} />;
 }
-
 
 export function CloseIcon() {
   return <X {...icon} />;
@@ -113,11 +110,14 @@ export function ArrowRightIcon() {
   return <ArrowRight {...icon} />;
 }
 
-
 export function LogOutIcon() {
   return <LogOut {...icon} />;
 }
 
 export function ExternalIcon() {
   return <ArrowUpRight {...icon} />;
+}
+
+export function NoteIcon() {
+  return <StickyNote {...icon} />;
 }
