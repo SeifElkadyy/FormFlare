@@ -15,6 +15,7 @@ import { waitlistRank } from "../waitlist/rank";
 import { extractEmail, parseFields, validateFields } from "./fields";
 import { loadForm } from "./form-cache";
 import { MAX_FIELDS_BYTES, parseBody, type ParsedFile } from "./parse";
+import { errorPageHtml } from "./error-page";
 
 /** Error codes from Section 12.1. */
 type ErrorCode =
@@ -406,6 +407,21 @@ function errorResponse(
   code: ErrorCode,
   fields?: Record<string, string>,
 ): Response {
+  // A plain HTML form navigated here, so the visitor would otherwise see raw JSON.
+  // Keyed on the browser's own navigation header rather than Accept: fetch() callers
+  // that never set Accept keep getting the JSON they already parse.
+  if (request.headers.get("sec-fetch-mode") === "navigate") {
+    return new Response(errorPageHtml(code, fields), {
+      status: STATUS[code],
+      headers: {
+        ...corsHeaders(request),
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'",
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "no-store",
+      },
+    });
+  }
   return Response.json(
     { ok: false, code, ...(fields ? { fields } : {}) },
     { status: STATUS[code], headers: corsHeaders(request) },

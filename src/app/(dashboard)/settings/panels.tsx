@@ -300,17 +300,34 @@ export function InstancePanel({
         {newer && latest ? ` — ${latest} is available` : latest ? ", up to date" : ""}
       </p>
       {newer ? (
-        <p className={alertClass}>
-          Pull the new tag in your clone and redeploy.
-          {htmlUrl ? (
-            <>
-              {" "}
-              <a href={htmlUrl} className="underline" rel="noreferrer">
-                Release notes
-              </a>
-            </>
-          ) : null}
-        </p>
+        <div className={`${alertClass} flex flex-col gap-2`}>
+          <p>
+            To update, open a terminal in a copy of <strong>your</strong> FormFlare repository (the
+            one Cloudflare created on GitHub) and run:
+          </p>
+          <code className="block rounded bg-white/70 px-2 py-1 font-mono text-xs dark:bg-black/30">
+            git pull && node scripts/check-update.mjs
+          </code>
+          <p>
+            Then merge the <code>upstream-update</code> branch it creates and push. Cloudflare
+            redeploys and runs any database changes on its own.{" "}
+            <a
+              href="https://github.com/SeifElkadyy/FormFlare#how-do-i-get-formflare-updates-after-deploying"
+              className="underline"
+              rel="noreferrer"
+            >
+              Step by step
+            </a>
+            {htmlUrl ? (
+              <>
+                {" · "}
+                <a href={htmlUrl} className="underline" rel="noreferrer">
+                  What&rsquo;s new
+                </a>
+              </>
+            ) : null}
+          </p>
+        </div>
       ) : null}
       {error ? <p className={hintClass}>{error}</p> : null}
       {checkedAt ? (
